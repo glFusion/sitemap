@@ -123,7 +123,7 @@ function plugin_autouninstall_sitemap()
         /* give the full name of the block, including 'phpblock_', etc */
         'php_blocks' => array(),
         /* give all vars with their name */
-        'vars'=> array()
+        'vars'=> array('sitemap_changes')
     );
     return $out;
 }
@@ -137,6 +137,9 @@ function plugin_postinstall_sitemap()
     global $_CONF, $_TABLES, $_SMAP_CONF, $_SMAP_MAPS;
     require_once dirname(__FILE__) . '/functions.inc';
     require_once dirname(__FILE__) . '/classes/smapConfig.class.php';
+
+    // Add the change counter
+    DB_query("INSERT INTO {$_TABLES['vars']} VALUES ('sitemap_changes', '0')",1);
 
     // Add the current plugins.
     // Configs haven't been loaded at this point, so fake them.

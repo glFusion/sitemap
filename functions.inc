@@ -329,7 +329,7 @@ function SITEMAP_write($filename, $sitemap)
 */
 function SITEMAP_createGoogleSitemap()
 {
-    global $_CONF, $_SMAP_CONF, $_SMAP_MAPS;
+    global $_CONF, $_SMAP_CONF, $_SMAP_MAPS, $_TABLES;
 
     USES_sitemap_class_base();
     USES_sitemap_class_config();
@@ -341,6 +341,14 @@ function SITEMAP_createGoogleSitemap()
         COM_errorLog("SITEMAP: Unable to create XML sitemap due to PHP configuration - 'short_open_tag' must be set to Off");
         return false;
     }
+
+    // Reset the counter in gl_vars. This is done first to handle the unlikely
+    // case where other content is saved while the sitemap is running.
+    // This is done regardless of the config setting so that forced runs will
+    // clear the counters also.
+    DB_query("UPDATE {$_TABLES['vars']}
+            SET value = 0
+            WHERE name = 'sitemap_changes'");
 
     $retval = false;
     $T = new Template(dirname(__FILE__) . '/templates');
@@ -436,11 +444,43 @@ function SMAP_canView()
 
 
 /**
-* callback function for the pseudo cron job
+*   Create the sitemap as part of scheduled tasks, if so configured.
 */
 function plugin_runScheduledTask_sitemap()
 {
-    SITEMAP_createGoogleSitemap();
+    global $_SMAP_CONF, $_VARS;
+
+    switch ($_SMAP_CONF['schedule']) {
+    case 0:     // run with every schedule task call
+        SITEMAP_createGoogleSitemap();
+        break;
+    case 1:     // run only if there are changes
+        if ($_VARS['sitemap_changes'] > 0) {
+            SITEMAP_createGoogleSitemap();
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+
+/**
+*   Update the counter in gl_vars when content is changed.
+*
+*   @param  string  $id     Item ID (unused)
+*   @param  string  $type   Item Type (unused)
+*   @param  string  $old_id Old Item ID (unused)
+*/
+function plugin_itemsaved_sitemap($id, $type, $old_id = '')
+{
+    global $_TABLES, $_SMAP_CONF;
+
+    if ($_SMAP_CONF['schedule'] == 1) {
+        DB_query("UPDATE {$_TABLES['vars']}
+                SET value = value + 1
+                WHERE name = 'sitemap_changes'");
+    }
 }
 
 ?>

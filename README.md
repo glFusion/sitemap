@@ -52,6 +52,10 @@ There are currently only three configuration options:
 1. Automatically add new plugins?
     * If "Yes", then newly-installed plugins which provide a sitemap driver will be added to the sitemaps.
     * Default: Yes
+1. When to generate XML sitemaps
+    * Always - regenerate with every scheduled task run
+    * If Content Changes - regenerate during scheduled task runs but only if content has changed (recommended)
+    * Manually - sitemaps are only regenerated when the Administrator does so via the admin panel
 
 ## Plugin Integration
 A collection of sitemap drivers for the bundled plugins is included in the

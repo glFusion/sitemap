@@ -5,7 +5,7 @@
 *   @author     Lee Garner <lee@leegarner.com>
 *   @copyright  Copyright (c) 2017 Lee Garner <lee@leegarner.com>
 *   @package    sitemap
-*   @version    2.0.0
+*   @version    2.0.1
 *   @license    http://opensource.org/licenses/gpl-2.0.php
 *               GNU Public License v2 or later
 *   @filesource
@@ -138,7 +138,10 @@ function sitemap_upgrade()
 
             // fall through...
         case '2.0.0' :
-            // no db / config changes
+            $configT = config::get_instance();
+            $configT->add('schedule', $_SMAP_DEFAULT['schedule'], 'select', 0, 0, 5, 40, true, $_SMAP_CONF['pi_name']);
+            // Add the change counter
+            DB_query("INSERT INTO {$_TABLES['vars']} VALUES ('sitemap_changes', '0')",1);
 
         default:
             DB_query("UPDATE {$_TABLES['plugins']} SET pi_version='".$_SMAP_CONF['pi_version']."',pi_gl_version='".$_SMAP_CONF['gl_version']."' WHERE pi_name='sitemap' LIMIT 1");

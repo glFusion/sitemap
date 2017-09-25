@@ -46,6 +46,11 @@
         <dd>Select &quot;Yes&quot; to have new plugins automatically added to the sitemap after they are installed, assuming they provide a sitemap driver file. New plugins will be added to the bottom of the sitemap; you can change that in the sitemap plugin administration.</dd>
       </dl>
 
+      <dl id="desc_schedule">
+        <dt>When to recreate sitemaps</dt>
+        <dd>Select &quot;Always&quot; to have the sitemaps created at every scheduled task run, which is the original behavior. Select &quot;If Content Changes&quot; to create the sitemaps only if content has changed, and &quot;Manually&quot; to manually generate the sitemaps via the admin panel. Sitemaps can take several seconds to be created, which will affect the guest experience, so the second or third options are recommended.</dd>
+      </dl>
+
     </div>
   </div>
 </body>

@@ -132,6 +132,7 @@ $LANG_confignames['sitemap'] = array(
     'xml_filenames' => 'Sitemap filename(s)',
     'view_access' => 'Users who can view the sitemap',
     'auto_add_plugins' => 'Automatically add new plugins?',
+    'schedule' => 'When to Recreate XML Sitemaps',
 );
 $LANG_configsubgroups['sitemap'] = array(
     'sg_main' => 'Main Settings',
@@ -146,6 +147,8 @@ $LANG_configselects['sitemap'] = array(
     0 => array('True' => 1, 'False' => 0),
     1 => array('True' => TRUE, 'False' => FALSE),
     3 => array('Yes' => 1, 'No' => 0),
+    4 => array('No Access' => 0, 'Logged-In Only' => 1, 'All Users' => 2),
+    5 => array('Always' => 0, 'If Content Changes' => 1, 'Manually' => 2),
 );
 
 ?>

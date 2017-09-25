@@ -5,6 +5,7 @@ SiteMap Plugin ChangeLog
   - Allow drivers to set default xml_enabled, html_enabled and priority values
   - Fix SQL query for Links XML sitemap
   - Upgrade cleanup
+  - Add config option to create sitemaps manually or only if content changes
 
 ## v2.0.0 (April 12, 2017)
   - Remove dependency on the Dataproxy plugin.

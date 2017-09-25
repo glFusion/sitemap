@@ -43,6 +43,14 @@ $_SMAP_DEFAULT['view_access'] = 2;
 */
 $_SMAP_DEFAULT['auto_add_plugins'] = 1;
 
+/**
+*   When to create the sitemaps.
+*   0 = at every scheduled task run (default, legacy)
+*   1 = with scheduled tasks, only if content has been changed
+*   2 = manually
+*/
+$_SMAP_DEFAULT['schedule'] = 0;
+
 
 /**
 *   Initialize Banner plugin configuration
@@ -61,6 +69,7 @@ function plugin_initconfig_sitemap()
         $c->add('xml_filenames', $_SMAP_DEFAULT['xml_filenames'],'text', 0, 0, 0, 10, true, $me);
         $c->add('view_access', $_SMAP_DEFAULT['view_access'],'select', 0, 0, 4, 20, true, $me);
         $c->add('auto_add_plugins', $_SMAP_DEFAULT['auto_add_plugins'],'select', 0, 0, 3, 30, true, $me);
+        $c->add('schedule', $_SMAP_DEFAULT['schedule'], 'select', 0, 0, 5, 40, true, $me);
     }
     return true;
 }
