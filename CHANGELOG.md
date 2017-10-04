@@ -1,6 +1,6 @@
 SiteMap Plugin ChangeLog
 
-## v2.0.1 (Unreleased)
+## v2.0.1 (October 6, 2017)
   - PHP v7.x compatibility fixes
   - Allow drivers to set default xml_enabled, html_enabled and priority values
   - Fix SQL query for Links XML sitemap
