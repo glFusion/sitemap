@@ -22,7 +22,7 @@ user has permissions to view.
 ## System Requirements
 SiteMap has the following system requirements:
 
-    * PHP 5.3.3 and higher.
+    * PHP 5.6.0 and higher.
     * glFusion v1.6.0 or newer
 
 ## Installation
