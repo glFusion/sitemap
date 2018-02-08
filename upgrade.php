@@ -75,7 +75,7 @@ function sitemap_upgrade()
             // reload config
             $configT = config::get_instance();
             $_SMAP_CONF = $configT->get_config('sitemap');
-            include dirname(__FILE__) . '/sitemap.php';
+            include __DIR__ . '/sitemap.php';
 
             // do database updates
             // $_SQL is set in mysql_install.php

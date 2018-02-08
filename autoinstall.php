@@ -33,8 +33,8 @@ if (!defined ('GVERSION')) {
 
 global $_DB_dbms, $_SMAP_CONF, $_SMAP_MAPS;
 
-require_once dirname(__FILE__) . '/sitemap.php';
-require_once dirname(__FILE__) . '/sql/mysql_install.php';
+require_once __DIR__ . '/sitemap.php';
+require_once __DIR__ . '/sql/mysql_install.php';
 
 // +--------------------------------------------------------------------------+
 // | Plugin installation options                                              |
@@ -135,8 +135,8 @@ function plugin_autouninstall_sitemap()
 function plugin_postinstall_sitemap()
 {
     global $_CONF, $_TABLES, $_SMAP_CONF, $_SMAP_MAPS;
-    require_once dirname(__FILE__) . '/functions.inc';
-    require_once dirname(__FILE__) . '/classes/smapConfig.class.php';
+    require_once __DIR__ . '/functions.inc';
+    require_once __DIR__ . '/classes/smapConfig.class.php';
 
     // Add the change counter
     DB_query("INSERT INTO {$_TABLES['vars']} VALUES ('sitemap_changes', '0')",1);
@@ -158,7 +158,7 @@ function plugin_load_configuration_sitemap()
 {
     global $_CONF, $_SMAP_CONF, $_TABLES;
 
-    require_once dirname(__FILE__) . '/install_defaults.php';
+    require_once __DIR__ . '/install_defaults.php';
     return plugin_initconfig_sitemap();
 }
 

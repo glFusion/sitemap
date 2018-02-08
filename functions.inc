@@ -41,12 +41,12 @@ if (!defined ('GVERSION')) {
 /**
 * Language file Include
 */
-$langfile = dirname(__FILE__) . '/language/'.$_CONF['language'].'.php';
+$langfile = __DIR__ . '/language/'.$_CONF['language'].'.php';
 clearstatcache();
 if (file_exists($langfile)) {
     include_once $langfile;
 } else {
-    include_once dirname(__FILE__) . '/language/english.php';
+    include_once __DIR__ . '/language/english.php';
 }
 
 global $_SMAP_MAPS;
@@ -57,19 +57,19 @@ global $_SMAP_CONF;
 require_once $_CONF['path_system'] . 'classes/config.class.php';
 $config = config::get_instance();
 $_SMAP_CONF = $config->get_config('sitemap');
-require_once dirname(__FILE__) . '/sitemap.php';
+require_once __DIR__ . '/sitemap.php';
 
 /** Import static config values */
-if (file_exists(dirname(__FILE__) . '/config.php')) {
+if (file_exists(__DIR__ . '/config.php')) {
     /** Import local configuration overrides, if any */
-    include_once dirname(__FILE__) . '/config.php';
+    include_once __DIR__ . '/config.php';
 }
 
 function USES_sitemap_class_config()
-{   require_once dirname(__FILE__) . '/classes/smapConfig.class.php'; }
+{   require_once __DIR__ . '/classes/smapConfig.class.php'; }
 
 function USES_sitemap_class_base()
-{   require_once dirname(__FILE__) . '/classes/sitemap_base.class.php'; }
+{   require_once __DIR__ . '/classes/sitemap_base.class.php'; }
 
 
 // +---------------------------------------------------------------------------+
@@ -179,7 +179,7 @@ function plugin_getuseroption_sitemap()
 function plugin_upgrade_sitemap()
 {
     global $_CONF, $_TABLES, $_SMAP_CONF;
-    require_once dirname(__FILE__) . '/upgrade.php';
+    require_once __DIR__ . '/upgrade.php';
     return sitemap_upgrade();
 }
 
@@ -351,7 +351,7 @@ function SITEMAP_createGoogleSitemap()
             WHERE name = 'sitemap_changes'");
 
     $retval = false;
-    $T = new Template(dirname(__FILE__) . '/templates');
+    $T = new Template(__DIR__ . '/templates');
     $T->set_file('smap', 'smap_google.thtml');
 
     $T->set_block('smap', 'smap_item', 'item');
