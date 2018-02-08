@@ -346,9 +346,7 @@ function SITEMAP_createGoogleSitemap()
     // case where other content is saved while the sitemap is running.
     // This is done regardless of the config setting so that forced runs will
     // clear the counters also.
-    DB_query("UPDATE {$_TABLES['vars']}
-            SET value = 0
-            WHERE name = 'sitemap_changes'");
+    SITEMAP_updateCounter(0);
 
     $retval = false;
     $T = new Template(__DIR__ . '/templates');
@@ -474,13 +472,30 @@ function plugin_runScheduledTask_sitemap()
 */
 function plugin_itemsaved_sitemap($id, $type, $old_id = '')
 {
-    global $_TABLES, $_SMAP_CONF;
+    global $_SMAP_CONF, $_SMAP_CONF, $_SMAP_MAPS;
 
-    if ($_SMAP_CONF['schedule'] == 1) {
-        DB_query("UPDATE {$_TABLES['vars']}
-                SET value = value + 1
-                WHERE name = 'sitemap_changes'");
+    USES_sitemap_class_config();
+    smapConfig::loadConfigs();
+    if ($_SMAP_CONF['schedule'] == 1 &&
+        isset($_SMAP_MAPS[$type]) && $_SMAP_MAPS[$type]['xml_enabled']) {
+        SITEMAP_updateCounter();
     }
+}
+
+
+/**
+*   Update the vars table with the number of changes, or 0 to clear
+*
+*   @param  integer $cnt    Update count, either 1 to add or 0 to clear
+*/
+function SITEMAP_updateCounter($cnt = 1)
+{
+    global $_TABLES;
+
+    $change = $cnt == 0 ? '0' : 'value + 1';
+    DB_query("UPDATE {$_TABLES['vars']}
+            SET value = $change
+            WHERE name = 'sitemap_changes'");
 }
 
 ?>
