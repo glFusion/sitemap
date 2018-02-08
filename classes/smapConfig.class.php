@@ -292,7 +292,6 @@ class smapConfig
     {
         global $_CONF, $_TABLES, $LANG21;
 
-        $retval = '';
         $pi_name = DB_escapeString($pi_name);
 
         switch ($where) {
