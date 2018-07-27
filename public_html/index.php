@@ -80,16 +80,15 @@ function SITEMAP_getSelectForm($selected = 'all')
 
 
 /**
-* Builds items belonging to a category
+*   Builds items belonging to a category
 *
-* @param $T       reference to Template object
-* @param $driver  reference to driver object
-* @param $pid     id of parent category
-* @return         array of ( num_items, html )
+*   @param $driver  reference to driver object
+*   @param $pid     id of parent category, may be false
+*   @return         array of ( num_items, html )
 *
-* @destroy        $T->var( 'items', 'item', 'item_list' )
+*   @destroy        $T->var( 'items', 'item', 'item_list' )
 */
-function SITEMAP_buildItems(&$driver, $pid)
+function SITEMAP_buildItems($driver, $pid)
 {
     global $_CONF, $_SMAP_CONF, $T;
 
@@ -101,8 +100,18 @@ function SITEMAP_buildItems(&$driver, $pid)
     } else {
         $sp_except = array();
     }
-
-    $items = $driver->getItems($pid);
+    if (version_compare(GVERSION, '2.0.0', '>=')) {
+        $c = \glFusion\Cache::getInstance();
+        $key = $c->createKey('sitemap_' . $driver->getName() . '_' . $pid);
+        if ($c->has($key)) {
+            $items = $c->get($key);
+        } else {
+            $items = $driver->getItems($pid);
+            $c->set($key, $items, array('sitemap', 'sitemap_' . $driver->getName()));
+        }
+    } else {
+        $items = $driver->getItems($pid);
+    }
     $num_items = count($items);
     if ($num_items > 0 && is_array($items)) {
         foreach ($items as $item) {
@@ -126,14 +135,13 @@ function SITEMAP_buildItems(&$driver, $pid)
 /**
 *   Builds a category and items belonging to it
 *
-*   @param $T       reference to Template object
 *   @param $driver  reference to driver object
 *   @param $cat     array of category data
 *   @return         string HTML
 *
 *   @destroy        $T->var( 'child_categories', 'category', 'num_items' )
 */
-function SITEMAP_buildCategory(&$driver, $cat)
+function SITEMAP_buildCategory($driver, $cat)
 {
     global $T, $LANG_SMAP;
 
@@ -141,8 +149,18 @@ function SITEMAP_buildCategory(&$driver, $cat)
     $temp = $T->get_var('child_categories');    // Push $T->var('child_categories')
 
     // Builds {child_categories}
-    $child_categories = $driver->getChildCategories($cat['id']);
-
+    if (version_compare(GVERSION, '2.0.0', '>=')) {
+        $key = 'sitemap_' . $driver->getName() . '_category_' . $cat['id'];
+        $c = \glFusion\Cache::getInstance();
+        if ($c->has($key)) {
+            $child_categories = $c->get($key);
+        } else {
+            $child_categories = $driver->getChildCategories($cat['id']);
+            $c->set($key, $child_categories, array('sitemap', 'sitemap_' . $driver->getName() . '_category'));
+        }
+    } else {
+        $child_categories = $driver->getChildCategories($cat['id']);
+    }
     if (count($child_categories) > 0) {
         $child_cats = '';
 
@@ -180,8 +198,6 @@ function SITEMAP_buildCategory(&$driver, $cat)
         $T->set_var(
             'items', $items);
     }
-
-
     $T->set_var('category', $category_link);
     $T->parse('category', 't_category');
     $retval = $T->finish($T->get_var('category'));
@@ -274,7 +290,6 @@ $T->parse('output', 't_index');
 $display = COM_siteHeader()
             . $T->finish($T->get_var('output'))
             . COM_siteFooter();
-
 echo $display;
 
 ?>

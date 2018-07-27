@@ -149,6 +149,7 @@ function sitemap_upgrade()
     }
 
     CTL_clearCache();
+    SITEMAP_clearCache();
 
     if ( DB_getItem($_TABLES['plugins'],'pi_version',"pi_name='sitemap'") == $_SMAP_CONF['pi_version']) {
         return true;

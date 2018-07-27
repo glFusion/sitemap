@@ -6,7 +6,7 @@
 // |                                                                          |
 // | glFusion Plugin API functions and support functions                      |
 // +--------------------------------------------------------------------------+
-// | Copyright (C) 2009-2017 by the following authors:                        |
+// | Copyright (C) 2009-2018 by the following authors:                        |
 // |                                                                          |
 // | Mark R. Evans          mark AT glfusion DOT org                          |
 // | Lee Garner             lee AT leegarner DOT com                          |
@@ -364,9 +364,20 @@ function SITEMAP_createGoogleSitemap()
             include_once $classfile;
             $cls = 'sitemap_' . $pi_name;
             if (class_exists($cls)) {
-                $C = new $cls();
-                $C->setXML();   // Mark as an XML sitemap
-                $items = $C->getItems();
+                $driver = new $cls();
+                $driver->setXML();   // Mark as an XML sitemap
+                if (version_compare(GVERSION, '2.0.0', '>=')) {
+                    $c = \glFusion\Cache::getInstance();
+                    $key = $c->createKey($cls . '_xml');
+                    if ($c->has($key)) {
+                        $items = $c->get($key);
+                    } else {
+                        $items = $driver->getItems();
+                        $c->set($key, $items, array('sitemap', $cls));
+                    }
+                } else {
+                    $items = $driver->getItems($pid);
+                }
             }
         }
 
@@ -480,6 +491,30 @@ function plugin_itemsaved_sitemap($id, $type, $old_id = '')
         isset($_SMAP_MAPS[$type]) && $_SMAP_MAPS[$type]['xml_enabled']) {
         SITEMAP_updateCounter();
     }
+    SITEMAP_clearCache($type);
+}
+
+
+/**
+*   Handle deletion of content items.
+*   Clears the cache for the type of item deleted so the sitemap will be
+*   rebuilt with current data.
+*
+*   @param  string  $id     Item ID (not used)
+*   @param  string  $type   Type of item, e.g. plugin name
+*   @param  boolean $children   Not used
+*/
+function plugin_itemdeleted_sitemap($id, $type, $children)
+{
+    global $_SMAP_CONF, $_SMAP_MAPS;
+
+    SITEMAP_clearCache($type);
+    USES_sitemap_class_config();
+    smapConfig::loadConfigs();
+    if ($_SMAP_CONF['schedule'] == 1 &&
+        isset($_SMAP_MAPS[$type]) && $_SMAP_MAPS[$type]['xml_enabled']) {
+         SITEMAP_updateCounter();    // To force regeneration
+    }
 }
 
 
@@ -496,6 +531,37 @@ function SITEMAP_updateCounter($cnt = 1)
     DB_query("UPDATE {$_TABLES['vars']}
             SET value = $change
             WHERE name = 'sitemap_changes'");
+}
+
+
+/**
+ * Clear cached items from the sitemap.
+ * Called when item is saved or deleted. Entire cache is cleared if a plugin
+ * name is not specified.
+ *
+ * @param   string  $item_type  Item type (plugin name)
+ */
+function SITEMAP_clearCache($item_type = '')
+{
+    global $_SMAP_CONF;
+
+    if (version_compare(GVERSION, '2.0.0', '<')) {
+        return;         // Caching not supported
+    }
+
+    // If item_type is not supplied, delete all items.
+    // Thie happend during update and removal
+    if ($item_type == '') {
+        $tags = array(
+            $_SMAP_CONF['pi_name'],
+        );
+    } else {
+        $tags = array(
+            $_SMAP_CONF['pi_name'] . '_' . $type,
+            $_SMAP_CONF['pi_name'] . '_' . $type . '_category',
+        );
+    }
+    \glFusion\Cache::getInstance()->deleteItemsByTags($tags);
 }
 
 ?>

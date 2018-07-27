@@ -113,6 +113,10 @@ function plugin_install_sitemap()
 */
 function plugin_autouninstall_sitemap()
 {
+    if (function_exists('SITEMAP_clearCache')) {
+        SITEMAP_clearCache();
+    }
+
     $out = array (
         /* give the name of the tables, without $_TABLES[] */
         'tables' => array('smap_maps'),

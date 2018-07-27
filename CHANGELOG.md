@@ -1,5 +1,9 @@
 SiteMap Plugin ChangeLog
 
+## v2.0.2 (TBD)
+  - Implement caching for glFusion 2.0.0+
+  - When an item is saved, trigger sitemap recreation only if enabled for that item type
+
 ## v2.0.1 (October 6, 2017)
   - PHP v7.x compatibility fixes
   - Allow drivers to set default xml_enabled, html_enabled and priority values
@@ -14,4 +18,3 @@ SiteMap Plugin ChangeLog
   - Dynamically add and remove plugin sitemap configurations as plugins are added or removed.
   - Include drivers for bundled plugins which can be overridden by plugin-supplied ones.
   - Access to the online sitemap can be given to all users or logged-in only, or disabled completely.
-
