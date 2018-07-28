@@ -557,8 +557,8 @@ function SITEMAP_clearCache($item_type = '')
         );
     } else {
         $tags = array(
-            $_SMAP_CONF['pi_name'] . '_' . $type,
-            $_SMAP_CONF['pi_name'] . '_' . $type . '_category',
+            $_SMAP_CONF['pi_name'] . '_' . $item_type,
+            $_SMAP_CONF['pi_name'] . '_' . $item_type . '_category',
         );
     }
     \glFusion\Cache::getInstance()->deleteItemsByTags($tags);
