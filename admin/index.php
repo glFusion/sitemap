@@ -104,7 +104,7 @@ function SITEMAP_getPriorityOptions($selected='')
 */
 function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
 {
-    global $_CONF, $LANG_ACCESS;
+    global $_CONF, $LANG_ACCESS, $LANG_SMAP;
 
     $pi_name = $A['pi_name'];
     $retval = '';
@@ -151,6 +151,13 @@ function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
         $retval .= '</select>' . LB;
         break;
 
+    case 'pi_name':
+        $retval = $pi_name;
+        if ($A['pi_status'] == 0) {
+            $retval .= " ({$LANG_SMAP['disabled']})";
+        };
+        break;
+
     default:
         $retval = $fieldvalue;
         break;
@@ -168,7 +175,7 @@ function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
 */
 function SMAP_adminList()
 {
-    global $_CONF, $_TABLES, $LANG_ADMIN, $_SMAP_MAPS, $_SMAP_CONF, $LANG_SMAP;
+    global $_CONF, $_TABLES, $LANG_ADMIN, $_SMAP_CONF, $LANG_SMAP;
 
     $retval = '';
 
@@ -200,13 +207,18 @@ function SMAP_adminList()
                 'sort' => false,
         ),
     );
+    $configs = Sitemap\Config::getAll();
+    foreach ($configs as $pi_name=>$config) {
+        // Hack to indicate any plugins that are installed but disabled.
+        $configs[$pi_name]['pi_status'] = Sitemap\Config::piEnabled($pi_name);
+    }
     $defsort_arr = array('field' => 'orderby', 'direction' => 'asc');
     $extra = array(
-        'map_count' => count($_SMAP_MAPS),
+        'map_count' => count($configs),
     );
     $retval .= ADMIN_listArray('simpleList', 'SMAP_adminField',
                 $header_arr, '',
-                $_SMAP_MAPS, $defsort_arr, '', $extra,
+                $configs, $defsort_arr, '', $extra,
                 '', NULL);
 
     $T = new Template($_CONF['path'] . '/plugins/sitemap/templates');
@@ -231,12 +243,6 @@ function SMAP_adminList()
 //=====================================
 
 USES_lib_admin();
-USES_sitemap_class_base();
-USES_sitemap_class_config();
-
-// Loads Sitemap plugin configuration first of all
-// Also cleans out disabled or deleted plugins
-smapConfig::loadConfigs();
 
 $action = '';
 
@@ -257,8 +263,7 @@ foreach($expected as $provided) {
 
 switch ($action) {
 case 'move':
-    USES_sitemap_class_config();
-    smapConfig::Move($_GET['id'], $actionval);
+    Sitemap\Config::Move($_GET['id'], $actionval);
     break;
 case 'updatenow':
     $st = ini_get('short_open_tag');

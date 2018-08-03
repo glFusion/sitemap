@@ -5,6 +5,8 @@ SiteMap Plugin ChangeLog
   - Fixed error in Calendar driver calculating date
   - Implement caching for glFusion 2.0.0+
   - When an item is saved, trigger sitemap recreation only if enabled for that item type
+  - Remove global variable for configurations
+  - Use PHP namespace for internal classes (drivers still use the global namespace)
 
 ## v2.0.1 (October 6, 2017)
   - PHP v7.x compatibility fixes

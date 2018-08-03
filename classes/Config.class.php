@@ -3,22 +3,24 @@
 *   Class to handle plugin configurations for sitemaps.
 *
 *   @author     Lee Garner <lee@leegarner.com>
-*   @copyright  Copyright (c) 2017 Lee Garner <lee@leegarner.com>
+*   @copyright  Copyright (c) 2017-2018 Lee Garner <lee@leegarner.com>
 *   @package    sitemap
-*   @version    2.0.0
+*   @version    2.0.1
 *   @license    http://opensource.org/licenses/gpl-2.0.php
 *               GNU Public License v2 or later
 *   @filesource
 */
+namespace Sitemap;
 
 /**
 *   Class for sitemap configurations.
 */
-class smapConfig
+class Config
 {
     var $isNew;
     var $properties = array();
     public static $local;
+    const TAG = 'smap_configs';      // tag applied for caching
 
     /**
     *   Constructor.  Sets the local properties using the array $item.
@@ -33,8 +35,8 @@ class smapConfig
         if ($pi_name == '') {
             $this->pi_name = '';
             $this->freq = 'weekly';
-            $this->xml_enabled = 1;
-            $this->html_enabled = 1;
+            $this->xml_enabled = 0;
+            $this->html_enabled = 0;
             $this->orderby = 999;
             $this->priority = 0.5;
         } else {
@@ -49,7 +51,7 @@ class smapConfig
     /**
     *   Read this field definition from the database.
     *
-    *   @see smapConfig::SetVars
+    *   @see Config::SetVars
     *   @param  string  $pi_name    Plugin name
     *   @return boolean     Status from SetVars()
     */
@@ -174,7 +176,6 @@ class smapConfig
         $sql = $sql1 . $sql2 . $sql3;
 
         DB_query($sql, 1);
-
         if (!DB_error()) {
             // After saving, reorder the fields
             self::reOrder();
@@ -188,10 +189,9 @@ class smapConfig
     *   Used to remove un-installed plugins.
     *
     *   @param  mixed   $pi_names   Single name or array of names
-    *   @param  boolean $relaod     True to reorder and reload, False to skip
     *   @return boolean     True on success, False on failure
     */
-    public static function Delete($pi_names, $reload = true)
+    public static function Delete($pi_names)
     {
         global $_TABLES;
 
@@ -199,7 +199,9 @@ class smapConfig
         foreach ($pi_names as $pi_name) {
             // Skip non-plugin sitemaps such as articles
             if (in_array($pi_name, self::$local)) continue;
+
             $values[] = "'" . DB_escapeString($pi_name) . "'";
+            Cache::clear($pi_name);
         }
         if (!empty($values)) {
             $values = implode(', ', $values);
@@ -207,10 +209,8 @@ class smapConfig
                     WHERE pi_name IN ($values)";
             DB_query($sql, 1);
             if (!DB_error()) {
-                if ($reload) {
-                    self::loadConfigs();
-                }
             }
+            Cache::clear(self::TAG);
         }
         return true;
     }
@@ -224,43 +224,31 @@ class smapConfig
     *   @param  boolean $relaod     True to reorder and reload, False to skip
     *   @return boolean     True on success, False on failure
     */
-    public static function Add($pi_names, $reload = true)
+    public static function Add($pi_names, $clear_cache = true)
     {
         global $_TABLES;
-
-        $res = DB_query("SELECT MAX(orderby) AS maxorder FROM {$_TABLES['smap_maps']}");
-        if ( DB_numRows($res) > 0 ) {
-            $mo = DB_fetchArray($res);
-            $maxOrder = $mo['maxorder'];
-        } else {
-            $maxOrder = 10;
-        }
 
         if (!is_array($pi_names)) {
             $pi_names = array($pi_names);
         }
-        USES_sitemap_class_base();
         foreach ($pi_names as $pi_name) {
-
             // Get the default enabled flags and priority from the driver
             $html = 1;
             $xml = 1;
             $prio = '0.5';
-            if (!in_array($pi_name, self::$local)) {
-                $classfile = self::getClassPath($pi_name);
-                if (is_file($classfile)) {
-                    include_once $classfile;
-                    $classname = 'sitemap_' . $pi_name;
-                    $S = new $classname();
-                    $html = (int)$S->html_enabled;
-                    $xml = (int)$S->xml_enabled;
-                    $priority = (float)$S->priority;
-                }
+            //if (!in_array($pi_name, self::$local) &&
+            //    is_file(self::getClassPath($pi_name))) {
+            if (self::piEnabled($pi_name)) {
+                $classname = 'sitemap_' . $pi_name;
+                $S = new $classname();
+                if (!$S) continue;
+                $html = (int)$S->html_enabled;
+                $xml = (int)$S->xml_enabled;
+                $priority = (float)$S->priority;
             }
 
-            $maxOrder += 10;
             $values[] = "('" . DB_escapeString($pi_name) .
-                    "', $html, $xml, $maxOrder, $priority)";
+                    "', $html, $xml, 9900, $priority)";
         }
         if (!empty($values)) {
             $values = implode(', ', $values);
@@ -269,10 +257,8 @@ class smapConfig
                 VALUES $values";
             DB_query($sql, 1);
             if (!DB_error()) {
+                Cache::clear(self::TAG);
                 self::reOrder();
-                if ($reload) {
-                    self::loadConfigs();
-                }
             }
         }
         return true;
@@ -284,7 +270,7 @@ class smapConfig
     *   The order field is incremented by 10, so this adds or subtracts 11
     *   to change the order, then reorders the fields.
     *
-    *   @uses   smapConfig::reOrder()
+    *   @uses   Config::reOrder()
     *   @param  integer $pi_name    Item to move
     *   @param  string  $where      Direction to move ('up' or 'down')
     */
@@ -329,7 +315,7 @@ class smapConfig
     */
     public static function reOrder()
     {
-        global $_TABLES, $_SMAP_MAPS;
+        global $_TABLES;
 
         $sql = "SELECT pi_name, orderby FROM {$_TABLES['smap_maps']}
                 ORDER BY orderby ASC";
@@ -337,6 +323,7 @@ class smapConfig
 
         $order = 10;
         $stepNumber = 10;
+        $clear_cache = false;
         while ($A = DB_fetchArray($result, false)) {
             if ($A['orderby'] != $order) {  // only update incorrect ones
                 $sql = "UPDATE {$_TABLES['smap_maps']}
@@ -344,49 +331,18 @@ class smapConfig
                     WHERE pi_name = '" . DB_escapeString($A['pi_name']) . "'";
                 DB_query($sql, 1);
                 if (DB_error()) {
-                    COM_errorLog("smapConfig::reOrder() SQL error: $sql");
+                    COM_errorLog("Config::reOrder() SQL error: $sql");
                     return false;
                 }
                 // Update the in-memory config array
-                $_SMAP_MAPS[$A['pi_name']]['orderby'] = $order;
+                $clear_cache = true;
             }
             $order += $stepNumber;
         }
+        // Clear the cache of all configs and sitemaps since the order has
+        // changed.
+        if ($clear_cache) Cache::clear();
         return true;
-    }
-
-
-    /**
-    *   Load all the sitemap configs into the config array.
-    *   Updates the global array variable, no return value.
-    *
-    *   First loads all the configured sitemaps where the driver belongs
-    *   to an installed plugin, then calls updateConfigs() to scan for
-    *   additional plugins with drivers.
-    */
-    public static function loadConfigs()
-    {
-        global $_SMAP_MAPS, $_TABLES, $_PLUGINS;
-
-        $_SMAP_MAPS = array();
-        $sql = "SELECT * FROM {$_TABLES['smap_maps']}
-                ORDER BY orderby ASC";
-        $result = DB_query($sql, 1);
-        if (DB_error()) {
-            COM_errorLog("smapConfig::loadConfigs() SQL error: $sql");
-            return;
-        }
-
-        // Only load configs for enabled plugins
-        while ($A = DB_fetchArray($result, false)) {
-            if (in_array($A['pi_name'], $_PLUGINS) || in_array($A['pi_name'], self::$local)) {
-                $_SMAP_MAPS[$A['pi_name']] = $A;
-            }
-        }
-
-        // Update configs for missing plugins, and optionally delete removed
-        // plugins
-        self::updateConfigs();
     }
 
 
@@ -399,7 +355,7 @@ class smapConfig
     */
     public function updatePriority($newvalue)
     {
-        global $_SMAP_CONF, $_TABLES, $_SMAP_MAPS;
+        global $_SMAP_CONF, $_TABLES;
 
         // Ensure that the new value is a valid priority. If not,
         // return the original value.
@@ -415,11 +371,12 @@ class smapConfig
         DB_change($_TABLES['smap_maps'], 'priority', $newvalue,
             'pi_name', $this->pi_name);
         if (DB_error()) {
-            COM_errorLog("smapConfig::updatePriority() SQL error");
+            COM_errorLog("Config::updatePriority() SQL error");
         } else {
             // Change the current object's value and Update the in-memory config
             $this->priority = $newvalue;
-            $_SMAP_MAPS[$this->pi_name]['priority'] = $this->priority;
+            Cache::clear($this->name);
+            Cache::clear(self::TAG);
         }
         return $this->priority;
     }
@@ -434,7 +391,7 @@ class smapConfig
     */
     public function updateFreq($newfreq)
     {
-        global $LANG_SMAP, $_TABLES, $_SMAP_MAPS;
+        global $LANG_SMAP, $_TABLES;
 
         $this->freq = $newfreq;
         // Make sure the new value is valid
@@ -442,11 +399,12 @@ class smapConfig
             DB_change($_TABLES['smap_maps'], 'freq', $newfreq,'pi_name', $this->pi_name);
             if (DB_error()) {
                 // Log error and return the old value
-                COM_errorLog("smapConfig::updateFreq error: $sql");
+                COM_errorLog("Config::updateFreq error: $sql");
             } else {
                 // Update the in-memory config and return the new value
                 $this->freq = $newfreq;
-                $_SMAP_MAPS[$this->pi_name]['freq'] = $this->freq;
+                Cache::clear($this->name);
+                Cache::clear(self::TAG);
             }
         }
         return $this->freq;
@@ -472,9 +430,11 @@ class smapConfig
                 $type . '_enabled', $newval,
                 'pi_name', DB_escapeString($pi_name));
         if (DB_error()) {
-            COM_errorLog("smapConfig::toggle() error: $sql");
+            COM_errorLog("Config::toggle() error: $sql");
             return $oldval;
         } else {
+            Cache::clear($pi_name);
+            Cache::clear(self::TAG);
             return $newval;
         }
     }
@@ -485,13 +445,20 @@ class smapConfig
     *   and adding new ones. Calls Add() and Delete() without reordering
     *   and reloading until the end to avoid unnecessary DB activity.
     *
-    *   Updates the $_SMAP_MAPS config table directly; no return value.
+    *   Calls self::getAll(false) to reload the configs only if any have changed.
+    *
+    *   @uses   self::getAll()
+    *   @param  array   $configs    Array of configs, NULL if not loaded yet
+    *   @return array       Updated array of configs.
     */
-    public static function updateConfigs()
+    public static function updateConfigs(&$configs = NULL)
     {
-        global $_PLUGINS, $_PLUGIN_INFO, $_SMAP_MAPS, $_CONF, $_SMAP_CONF;
-
-        $reload_maps = false;     // Flag to indicate maps need reloading
+        global $_PLUGINS, $_PLUGIN_INFO, $_CONF, $_SMAP_CONF;
+        if ($configs === NULL) {
+            // prevent looping since updateConfigs is called by getAll()
+            $configs = self::getAll();
+        }
+        $have_updates = false;    // Change to true if any changes are made
 
         // Get any enabled plugins that aren't already in the sitemap table
         // and add them, if so configured
@@ -500,17 +467,16 @@ class smapConfig
             $plugins = array_merge($_PLUGINS, self::$local);
             $values = array();
             foreach ($plugins as $pi_name) {
-                if (!isset($_SMAP_MAPS[$pi_name])) {
+                if (!isset($configs[$pi_name])) {
                     // Plugin not in config table, see if there's a driver for it
-                    if (in_array($pi_name, self::$local) ||
-                            is_file(self::getClassPath($pi_name))) {
+                    if (self::piEnabled($pi_name)) {
                         $values[] = $pi_name;
                     }
                 }
             }
             if (!empty($values)) {
-                self::Add($values);
-                $reload_maps = true;
+                self::Add($values, false);
+                $have_updates = true;
             }
         }
 
@@ -519,25 +485,25 @@ class smapConfig
         // plugins, e.g. not in the $_PLUGIN_INFO array, or those for
         // which a driver can't be found.
         $values = array();
-        foreach ($_SMAP_MAPS as $pi_name=>$info) {
+        foreach ($configs as $pi_name=>$info) {
             if (in_array($pi_name, self::$local)) {
                 continue;
             }
+            // Don't use self::piEnabled() here since we're looking for plugins
+            // that are actually uninstalled, not just disabled
             if (!isset($_PLUGIN_INFO[$pi_name]) || !is_file(self::getClassPath($pi_name))) {
                 $values[] = $pi_name;
             }
         }
         if (!empty($values)) {
             self::Delete($values, false);
-            $reload_maps = true;
+            $have_updates = true;
         }
-
-        // If any updates were done, now reload the configs.
-        // orderby values weren't changed, just added or removed, so no need
-        // to reorder at this point.
-        if ($reload_maps) {
-            self::loadConfigs();
+        if ($have_updates) {
+            Cache::clear();
+            $configs = self::getAll(false);
         }
+        return;
     }
 
 
@@ -552,6 +518,7 @@ class smapConfig
     public static function getClassPath($pi_name)
     {
         global $_CONF, $_SMAP_CONF;
+        static $paths = array();
 
         // Check first for a plugin-supplied driver, then look for bundled
         $dirs = array(
@@ -559,18 +526,133 @@ class smapConfig
             'sitemap',
         );
 
-        foreach ($dirs as $dir) {
-            $path = $_CONF['path'] . '/plugins/' . $dir .
-                    '/sitemap/' . $pi_name . '.class.php';
-            if (is_file($path)) return $path;
+        if (!array_key_exists($pi_name, $paths)) {
+            $paths[$pi_name] = NULL;
+            foreach ($dirs as $dir) {
+                $path = $_CONF['path'] . '/plugins/' . $dir .
+                        '/sitemap/' . $pi_name . '.class.php';
+                if (is_file($path)) {
+                    $paths[$pi_name] = $path;
+                    break;
+                }
+            }
         }
-        return NULL;
+        return $paths[$pi_name];
     }
 
+
+    /**
+    *   Load all the sitemap configs into the config array.
+    *   Updates the global array variable, no return value.
+    *
+    *   First loads all the configured sitemaps where the driver belongs
+    *   to an installed plugin, then calls updateConfigs() to scan for
+    *   additional plugins with drivers. updateConfigs() calls this
+    *   function but sets $do_update to false to prevent loops.
+    *
+    *   @uses   self::updateConfigs()
+    *   @param  boolean $do_update  True to call updateConfigs
+    *   @return array       Array of config objects
+    */
+    public static function getAll($do_update = true)
+    {
+        global $_TABLES, $_PLUGINS;
+        static $configs = NULL;
+
+        if (!$do_update) $configs = NULL;   // force re-reading
+        if ($configs === NULL) {
+            $cache_key = 'smap_configs';
+            $configs = Cache::get($cache_key);
+            if ($configs === NULL) {
+                $configs = array();
+                $sql = "SELECT * FROM {$_TABLES['smap_maps']}
+                        ORDER BY orderby ASC";
+                $result = DB_query($sql, 1);
+                if (DB_error()) {
+                    COM_errorLog("Config::getAll() SQL error: $sql");
+                    return;
+                }
+
+                // Only load configs for enabled plugins
+                while ($A = DB_fetchArray($result, false)) {
+                    $configs[$A['pi_name']] = $A;
+                }
+                Cache::set($cache_key, $configs, self::TAG);
+            }
+        }
+        if ($do_update) {
+            self::updateConfigs($configs);
+        }
+        return $configs;
+    }
+
+
+    /**
+     * Get all the sitemap drivers.
+     * Checks a static variable first since this may be called multiple
+     * times in a page load (admin index page, for example)
+     *
+     * @return  array       Array of driver objects
+     */
+    public static function getDrivers()
+    {
+        static $drivers = NULL;
+
+        if ($drivers === NULL) {
+            $cache_key = 'smap_drivers';
+            $drivers = Cache::get($cache_key);
+            if ($drivers === NULL) {
+                $drivers = array();
+                foreach (self::getAll() as $pi_name=>$pi_config) {
+                    // Gets all the config items, but only loads drivers for
+                    // enabled plugins
+                    if (self::piEnabled($pi_name)) {
+                        $path = self::getClassPath($pi_name);
+                        if ($path) {
+                            $cls = 'sitemap_' . $pi_name;
+                            $drivers[] = new $cls($pi_config);
+                        }
+                    }
+                }
+                Cache::set($cache_key, $drivers, self::TAG);
+            }
+        }
+        return $drivers;
+    }
+
+
+    /**
+     * Check if a plugin should be included in the sitemaps.
+     * Checks that the plugin is enabled or local, and that there is a 
+     * sitemap driver for it.
+     *
+     * @return  booolean    True if plugin is enabled or local
+     */
+    public static function piEnabled($pi_name)
+    {
+        global $_PLUGINS;
+
+        // Cache paths for repetitive calls.
+        static $plugins = array();
+
+        if (!isset($plugins[$pi_name])) {
+            if ( (!in_array($pi_name, $_PLUGINS) &&
+                !in_array($pi_name, self::$local) ) ||
+                !is_file(self::getClassPath($pi_name))) {
+                $plugins[$pi_name] = false;
+            } else {
+                $plugins[$pi_name] = true;
+            }
+        }
+        return $plugins[$pi_name];
+    }
+ 
 }
 
 // Set the static variable to the names of non-plugin sitemap drivers
 // included with the Sitemap plugin. These cannot be deleted.
-smapConfig::$local = array('article');
+// This could be a single string set above inside the objecdt, but using an
+// array allows other types to be added easily if needed.
+Config::$local = array('article');
 
 ?>

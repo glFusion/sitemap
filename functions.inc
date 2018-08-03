@@ -49,9 +49,6 @@ if (file_exists($langfile)) {
     include_once __DIR__ . '/language/english.php';
 }
 
-global $_SMAP_MAPS;
-$_SMAP_MAPS = array();
-
 /** Import the configuration class, if needed */
 global $_SMAP_CONF;
 require_once $_CONF['path_system'] . 'classes/config.class.php';
@@ -65,11 +62,32 @@ if (file_exists(__DIR__ . '/config.php')) {
     include_once __DIR__ . '/config.php';
 }
 
-function USES_sitemap_class_config()
-{   require_once __DIR__ . '/classes/smapConfig.class.php'; }
+spl_autoload_register(function ($class)
+{
+    $path = '';
+    if (strpos($class, 'Sitemap\\') === 0) {
+        // Loading an internal class. Eventually all classes should be
+        // namespaced.
+        $class = str_replace('Sitemap\\', '', $class);
+        $path = __DIR__ . '/classes/' . $class . '.class.php';
+    } elseif ($class == 'sitemap_base') {
+        // Loading the base driver class. Needed for plugins that supply
+        // their own driver and use "extends sitemap_base"
+        $path = __DIR__ . '/classes/' . $class . '.class.php';
+    } elseif (strpos($class, 'sitemap_') === 0) {
+        // Loading a plugin driver, either from the plugin directory or
+        // falling back to the sitemap-supplied driver.
+        $pi_name = str_replace('sitemap_', '', $class);
+        $path = Sitemap\Config::getClassPath($pi_name);
+    } else {
+        // Not a sitemap class, so just return.
+        return;
+    }
 
-function USES_sitemap_class_base()
-{   require_once __DIR__ . '/classes/sitemap_base.class.php'; }
+    if (file_exists($path)) {
+        include $path;
+    }
+});
 
 
 // +---------------------------------------------------------------------------+
@@ -325,22 +343,22 @@ function SITEMAP_write($filename, $sitemap)
 /**
 *   Creates the Google Sitemap files.
 *   No return value.
+*   Does not use the Cache class since the XML sitemap file is effectively
+*   the item cache.
+*
 *   @uses   SITEMAP_write()
 */
 function SITEMAP_createGoogleSitemap()
 {
-    global $_CONF, $_SMAP_CONF, $_SMAP_MAPS, $_TABLES;
-
-    USES_sitemap_class_base();
-    USES_sitemap_class_config();
-
-    smapConfig::loadConfigs();
+    global $_CONF, $_SMAP_CONF;
 
     $st = ini_get('short_open_tag');
     if( $st ) {
         COM_errorLog("SITEMAP: Unable to create XML sitemap due to PHP configuration - 'short_open_tag' must be set to Off");
         return false;
     }
+
+    $drivers = Sitemap\Config::getDrivers();
 
     // Reset the counter in gl_vars. This is done first to handle the unlikely
     // case where other content is saved while the sitemap is running.
@@ -354,31 +372,14 @@ function SITEMAP_createGoogleSitemap()
 
     $T->set_block('smap', 'smap_item', 'item');
 
-    foreach ($_SMAP_MAPS as $pi_name=>$config) {
-        // Skip disabled sitemaps
-        if (!$config['xml_enabled']) continue;
-
-        // Load the driver for the sitemap, if available
-        $classfile = smapConfig::getClassPath($pi_name);
-        if (is_file($classfile)) {
-            include_once $classfile;
-            $cls = 'sitemap_' . $pi_name;
-            if (class_exists($cls)) {
-                $driver = new $cls();
-                $driver->setXML();   // Mark as an XML sitemap
-                if (version_compare(GVERSION, '2.0.0', '>=')) {
-                    $c = \glFusion\Cache::getInstance();
-                    $key = $c->createKey($cls . '_xml');
-                    if ($c->has($key)) {
-                        $items = $c->get($key);
-                    } else {
-                        $items = $driver->getItems();
-                        $c->set($key, $items, array('sitemap', $cls));
-                    }
-                } else {
-                    $items = $driver->getItems($pid);
-                }
-            }
+    foreach ($drivers as $driver) {
+        $key = $driver->getName() . '_xml';
+        if ($driver->xml_enabled) {
+            // Only add XML-enabled items
+            $items = $driver->getItems();
+        } else {
+            // Delete the cached XML sitemap in case xml was disabled
+            $items = NULL;
         }
 
         // No driver found, or no items returned
@@ -393,10 +394,11 @@ function SITEMAP_createGoogleSitemap()
             $T->set_var(array(
                 'url'   => $item['uri'],
                 'date'  => $date,
-                'freq'  => $config['freq'],
-                'priority'  => $config['priority'] != '0.5' ?
-                        $config['priority'] : '',
+                'freq'  => $driver->freq,
             ) );
+            if ($driver->priority != '0.5') {
+                $T->set_var('priority', $driver->priority);
+            }
             $T->parse('item', 'smap_item', true);
         }
     }
@@ -483,15 +485,14 @@ function plugin_runScheduledTask_sitemap()
 */
 function plugin_itemsaved_sitemap($id, $type, $old_id = '')
 {
-    global $_SMAP_CONF, $_SMAP_CONF, $_SMAP_MAPS;
+    global $_SMAP_CONF, $_SMAP_CONF;
 
-    USES_sitemap_class_config();
-    smapConfig::loadConfigs();
+    $configs = Sitemap\Config::getAll();
     if ($_SMAP_CONF['schedule'] == 1 &&
-        isset($_SMAP_MAPS[$type]) && $_SMAP_MAPS[$type]['xml_enabled']) {
+        isset($configs[$type]) && $configs[$type]['xml_enabled']) {
         SITEMAP_updateCounter();
     }
-    SITEMAP_clearCache($type);
+    Sitemap\Cache::clear($type);
 }
 
 
@@ -506,15 +507,13 @@ function plugin_itemsaved_sitemap($id, $type, $old_id = '')
 */
 function plugin_itemdeleted_sitemap($id, $type, $children)
 {
-    global $_SMAP_CONF, $_SMAP_MAPS;
+    global $_SMAP_CONF;
 
-    SITEMAP_clearCache($type);
-    USES_sitemap_class_config();
-    smapConfig::loadConfigs();
-    if ($_SMAP_CONF['schedule'] == 1 &&
-        isset($_SMAP_MAPS[$type]) && $_SMAP_MAPS[$type]['xml_enabled']) {
+    Sitemap\Cache::clear($type);
+    if ($_SMAP_CONF['schedule'] == 1) {
          SITEMAP_updateCounter();    // To force regeneration
     }
+    \glFusion\Cache::getInstance()->deleteItemsByTags($tags);
 }
 
 
@@ -531,37 +530,6 @@ function SITEMAP_updateCounter($cnt = 1)
     DB_query("UPDATE {$_TABLES['vars']}
             SET value = $change
             WHERE name = 'sitemap_changes'");
-}
-
-
-/**
- * Clear cached items from the sitemap.
- * Called when item is saved or deleted. Entire cache is cleared if a plugin
- * name is not specified.
- *
- * @param   string  $item_type  Item type (plugin name)
- */
-function SITEMAP_clearCache($item_type = '')
-{
-    global $_SMAP_CONF;
-
-    if (version_compare(GVERSION, '2.0.0', '<')) {
-        return;         // Caching not supported
-    }
-
-    // If item_type is not supplied, delete all items.
-    // Thie happend during update and removal
-    if ($item_type == '') {
-        $tags = array(
-            $_SMAP_CONF['pi_name'],
-        );
-    } else {
-        $tags = array(
-            $_SMAP_CONF['pi_name'] . '_' . $item_type,
-            $_SMAP_CONF['pi_name'] . '_' . $item_type . '_category',
-        );
-    }
-    \glFusion\Cache::getInstance()->deleteItemsByTags($tags);
 }
 
 ?>
