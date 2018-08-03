@@ -1,6 +1,8 @@
 SiteMap Plugin ChangeLog
 
-## v2.0.2 (TBD)
+## v2.0.2 (unreleased)
+  - Use glFusion date class
+  - Fixed error in Calendar driver calculating date
   - Implement caching for glFusion 2.0.0+
   - When an item is saved, trigger sitemap recreation only if enabled for that item type
 
