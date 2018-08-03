@@ -78,7 +78,7 @@ class sitemap_links extends sitemap_base
         $entries = array();
         $sql = "SELECT * FROM {$_TABLES['linkcategories']}";
         if ($pid === false) {
-            $pid = 'site';
+            $pid = 'root';
         }
         $sql .= " WHERE (pid = '" . DB_escapeString($pid) . "') ";
 
@@ -123,7 +123,7 @@ class sitemap_links extends sitemap_base
 
         $sql  = "SELECT lid, title, UNIX_TIMESTAMP(date) AS date_u
                 FROM {$_TABLES['links']} WHERE 1=1 ";
-        if ($category != 0) {
+        if (!empty($category)) {
             $sql .= "AND (cid ='" . DB_escapeString($category) . "') ";
         }
 
