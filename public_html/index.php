@@ -220,8 +220,9 @@ $drivers = Sitemap\Config::getDrivers();
 foreach ($drivers as $driver) {
     $num_items = 0;
 
-    // Only display selected driver, or "all"
-    if ($selected != 'all' && $selected != $driver->getName()) {
+    // Only display enabled selected driver, or "all"
+    if ( !$driver->html_enabled ||
+        ($selected != 'all' && $selected != $driver->getName()) ) {
         continue;
     }
 
