@@ -9,7 +9,7 @@
 * @license GNU General Public License version 2 or later
 *     http://www.opensource.org/licenses/gpl-license.php
 *
-*  Copyright (C) 2009-2017 by the following authors:
+*  Copyright (C) 2009-2018 by the following authors:
 *   Mark R. Evans   mark AT glfusion DOT org
 *   Lee Garner      lee AT leegarner DOT com                          |
 *
@@ -37,8 +37,8 @@ $_TABLES['smap_maps']   = $_SMAP_table_prefix . 'smap_maps';
 // Plugin info
 $_SMAP_CONF['pi_name']          = 'sitemap';
 $_SMAP_CONF['pi_display_name']  = 'SiteMap';
-$_SMAP_CONF['pi_version']       = '2.0.1';
-$_SMAP_CONF['gl_version']       = '1.6.0';
+$_SMAP_CONF['pi_version']       = '2.0.2';
+$_SMAP_CONF['gl_version']       = '1.7.0';
 $_SMAP_CONF['pi_url']           = 'https://www.glfusion.org/';
 
 $_SMAP_CONF['priorities'] = array(

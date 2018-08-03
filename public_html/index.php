@@ -6,7 +6,7 @@
 // |                                                                          |
 // | User Interface                                                           |
 // +--------------------------------------------------------------------------+
-// | Copyright (C) 2008-2015 by the following authors:                        |
+// | Copyright (C) 2008-2018 by the following authors:                        |
 // |                                                                          |
 // | Mark R. Evans          mark AT glfusion DOT org                          |
 // |                                                                          |
@@ -90,9 +90,11 @@ function SITEMAP_getSelectForm($selected = 'all')
 */
 function SITEMAP_buildItems($driver, $pid)
 {
-    global $_CONF, $_SMAP_CONF, $T;
+    global $_CONF, $_SMAP_CONF, $T, $_USER;
 
     $html = '';
+
+    $dt = new \Date('now',$_USER['tzid']);
 
     $T->clear_var('items');
     if ( isset($_SMAP_CONF['sp_except']) ) {
@@ -120,7 +122,8 @@ function SITEMAP_buildItems($driver, $pid)
                     array('title'=> $driver->Escape($item['title'])) );
             $T->set_var('item', $link);
             if ($item['date'] !== false) {
-                $date = date($_CONF['shortdate'], $item['date']);
+                $dt->setTimestamp($item['date']);
+                $date = $dt->format($_CONF['shortdate'],true);
                 $T->set_var('date', $date);
             }
             $T->parse('items', 't_item', true);

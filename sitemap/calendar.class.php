@@ -3,7 +3,7 @@
 *   Sitemap driver for the Calendar Plugin.
 *
 *   @author     Mark R. Evans <mark@glfusion.org>
-*   @copyright  Copyright (c) 2008 Mark R. Evans <mark@glfusion.org>
+*   @copyright  Copyright (c) 2008-2018 Mark R. Evans <mark AT glfusion DOT org>
 *   @copyright  Copyright (c) 2007-2008 Mystral-kk <geeklog@mystral-kk.net>
 *   @package    glfusion
 *   @version    2.0.0
@@ -94,15 +94,14 @@ class sitemap_calendar extends sitemap_base
 
         $entries = array();
 
-        $sql = "SELECT eid, title, UNIX_TIMESTAMP(datestart) AS day1,
-                    UNIX_TIMESTAMP(timestart) AS day2
+        $sql = "SELECT eid, title, UNIX_TIMESTAMP(concat(datestart,' ',timestart)) as date
                 FROM {$_TABLES['events']}
                 WHERE (status=1
                     AND event_type = '" . DB_escapeString($category) . "') ";
         if ($this->uid > 0) {
             $sql .= COM_getPermSql('AND', $this->uid);
         }
-        $sql .= ' ORDER BY day1 DESC, day2 DESC';
+        $sql .= ' ORDER BY date DESC';
 
         $result = DB_query($sql, 1);
         if (DB_error()) {
@@ -116,13 +115,11 @@ class sitemap_calendar extends sitemap_base
                 'title'     => $A['title'],
                 'uri'       => $_CONF['site_url'] . '/calendar/event.php?eid='
                                 . $A['eid'],
-                'date'      => (int)$A['day1'] + (int)$A['day2'],
+                'date'      => (int)$A['date'], //(int)$A['day1'] + (int)$A['day2'],
                 'image_uri' => false,
             );
         }
         return $entries;
     }
-
 }
-
 ?>
