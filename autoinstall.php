@@ -31,7 +31,7 @@ if (!defined ('GVERSION')) {
     die ('This file can not be used on its own.');
 }
 
-global $_DB_dbms, $_SMAP_CONF, $_SMAP_MAPS;
+global $_DB_dbms, $_SMAP_CONF;
 
 require_once __DIR__ . '/sitemap.php';
 require_once __DIR__ . '/sql/mysql_install.php';
@@ -113,9 +113,7 @@ function plugin_install_sitemap()
 */
 function plugin_autouninstall_sitemap()
 {
-    if (function_exists('SITEMAP_clearCache')) {
-        SITEMAP_clearCache();
-    }
+    Sitemap\Cache:clear();
 
     $out = array (
         /* give the name of the tables, without $_TABLES[] */
@@ -138,18 +136,16 @@ function plugin_autouninstall_sitemap()
 */
 function plugin_postinstall_sitemap()
 {
-    global $_CONF, $_TABLES, $_SMAP_CONF, $_SMAP_MAPS;
+    global $_CONF, $_TABLES, $_SMAP_CONF;
     require_once __DIR__ . '/functions.inc';
-    require_once __DIR__ . '/classes/smapConfig.class.php';
 
     // Add the change counter
     DB_query("INSERT INTO {$_TABLES['vars']} VALUES ('sitemap_changes', '0')",1);
 
     // Add the current plugins.
     // Configs haven't been loaded at this point, so fake them.
-    $_SMAP_MAPS = array();
     $_SMAP_CONF['auto_add_plugins'] = 1;
-    smapConfig::updateConfigs();
+    Sitemap\smapConfig::updateConfigs();
 }
 
 

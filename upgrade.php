@@ -3,7 +3,7 @@
 *   Upgrade routines for the Sitemap plugin
 *
 *   @author     Lee Garner <lee@leegarner.com>
-*   @copyright  Copyright (c) 2017 Lee Garner <lee@leegarner.com>
+*   @copyright  Copyright (c) 2017-2018 Lee Garner <lee@leegarner.com>
 *   @package    sitemap
 *   @version    2.0.1
 *   @license    http://opensource.org/licenses/gpl-2.0.php
@@ -32,35 +32,35 @@ function sitemap_upgrade()
     }
 
     switch ($currentVersion) {
-		case '1.0':
-			require_once $_CONF['path'].'plugins/sitemap/sql/mysql_update-1.0_1.0.1.php';
-			foreach ($VALUES_100_TO_101 as $table => $sqls) {
-				COM_errorLog("Inserting default data into $table table", 1);
-				foreach ($sqls as $sql) {
-					DB_query($sql, 1);
-				}
-			}
-			// fall through
-		case '1.0.1':
-		case '1.0.2':
-		case '1.0.3':
-		case '1.1.0':
-		case '1.1.1':
-		case '1.1.2':
-		case '1.1.3':
-			require_once $_CONF['path'].'plugins/sitemap/sql/mysql_update-1.0.1_1.1.4.php';
-			COM_errorLog("Inserting default data into table", 1);
-			foreach ($DATA_101_TO_114 as $sql) {
-				DB_query($sql, 1);
-			}
+        case '1.0':
+            require_once $_CONF['path'].'plugins/sitemap/sql/mysql_update-1.0_1.0.1.php';
+            foreach ($VALUES_100_TO_101 as $table => $sqls) {
+                COM_errorLog("Inserting default data into $table table", 1);
+                foreach ($sqls as $sql) {
+                    DB_query($sql, 1);
+                }
+            }
+            // fall through
+        case '1.0.1':
+        case '1.0.2':
+        case '1.0.3':
+        case '1.1.0':
+        case '1.1.1':
+        case '1.1.2':
+        case '1.1.3':
+            require_once $_CONF['path'].'plugins/sitemap/sql/mysql_update-1.0.1_1.1.4.php';
+            COM_errorLog("Inserting default data into table", 1);
+            foreach ($DATA_101_TO_114 as $sql) {
+                DB_query($sql, 1);
+            }
             // fall through
         case '1.1.4' :
         case '1.1.5' :
         case '1.1.6' :
         case '1.1.7' :
-			// v2.0 moves configuration over to glFusion's config table
+            // v2.0 moves configuration over to glFusion's config table
 
-			require_once $_CONF['path'].'plugins/sitemap/sql/mysql_install.php';
+            require_once $_CONF['path'].'plugins/sitemap/sql/mysql_install.php';
             require_once $_CONF['path'].'plugins/sitemap/classes/smapConfig.class.php';
             require_once $_CONF['path'].'plugins/sitemap/install_defaults.php';
 
@@ -149,7 +149,8 @@ function sitemap_upgrade()
     }
 
     CTL_clearCache();
-    SITEMAP_clearCache();
+    Sitemap\Cache::clear();
+    _SITEMAP_remOldFiles();
 
     if ( DB_getItem($_TABLES['plugins'],'pi_version',"pi_name='sitemap'") == $_SMAP_CONF['pi_version']) {
         return true;
@@ -162,37 +163,67 @@ function sitemap_upgrade()
 /**
 * Loads vars from DB into $_SMAP_CONF[]
 */
-function _SITEMAP_loadConfig() {
-	global $_TABLES;
+function _SITEMAP_loadConfig()
+{
+    global $_TABLES;
 
     $conf = array();
 
     if ( !DB_checkTableExists('smap_config') ) return $conf;
 
-	$sql = "SELECT * FROM {$_TABLES['smap_config']}";
-	$result = DB_query($sql);
-	if (DB_error()) {
-		COM_errorLog('SITEMAP_loadConfig: cannot load config.');
-		exit;
-	}
+    $sql = "SELECT * FROM {$_TABLES['smap_config']}";
+    $result = DB_query($sql);
+    if (DB_error()) {
+        COM_errorLog('_SITEMAP_loadConfig: cannot load config.');
+        exit;
+    }
 
-	while (($A = DB_fetchArray($result)) !== FALSE) {
-		list($name, $value) = $A;
-		if ($value == 'true') {
-			$value = true;
-		} else if ($value == 'false') {
-			$value = false;
-		}
+    while (($A = DB_fetchArray($result)) !== FALSE) {
+        list($name, $value) = $A;
+        if ($value == 'true') {
+            $value = true;
+        } else if ($value == 'false') {
+            $value = false;
+        }
 
-		if ($name == 'date_format') {
-			$value = substr($value, 1, -1);
-		} else if (substr($name, 0, 6) == 'order_') {
-			$value = (int) $value;
-		}
+        if ($name == 'date_format') {
+            $value = substr($value, 1, -1);
+        } else if (substr($name, 0, 6) == 'order_') {
+            $value = (int) $value;
+        }
 
-		$conf[$name] = $value;
-	}
-	return $conf;
+        $conf[$name] = $value;
+    }
+    return $conf;
+}
+
+
+/**
+ * Remove deprecated files
+ */
+function _SITEMAP_remOldFiles()
+{
+    global $_CONF, $_SMAP_CONF;
+
+    $paths = array(
+        // private/plugins/sitemap
+        __DIR__ => array(
+            // 2.0.2
+            'classes/smapConfig.class.php',
+        ),
+        // public_html/sitemap
+        $_CONF['path_html'] . $_SMAP_CONF['pi_name'] => array(
+        ),
+        // admin/plugins/sitemap
+        $_CONF['path_html'] . 'admin/plugins/' . $_SMAP_CONF['pi_name'] => array(
+        ),
+    );
+
+    foreach ($paths as $path=>$files) {
+        foreach ($files as $file) {
+            @unlink("$path/$file");
+        }
+    }
 }
 
 ?>

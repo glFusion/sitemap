@@ -25,31 +25,52 @@ class sitemap_base
     protected $smap_type;   // HTML or XML
     protected $name;        // Name of this plugin or sitemap type
     protected $config;      // Config elements for this driver
-    public $html_enabled = 1;   // Default html enabled
-    public $xml_enabled = 1;    // Default xml enabled
-    public $priority = '0.5';   // Default priority
 
     /**
     *   Constructor. Sets internal values to defaults
     *
-    *   @param  array   $config Driver config from $_SMAP_MAPS
+    *   @param  array   $config     Driver config
     */
-    public function __construct()
+    public function __construct($config = NULL)
     {
-        global $_USER, $_SMAP_MAPS;
+        global $_USER;
 
         $this->uid = (int)$_USER['uid'];
         $this->all_langs = false;   // Assume only the user's language
         $this->setHTML();           // Default to HTML sitemap
-        if (isset($_SMAP_MAPS[$this->name])) {
-            $this->config = $_SMAP_MAPS[$this->name];
+        if ($config !== NULL) {
+            $this->config = $config;
+        } elseif (!empty($this->name)) {
+            // Have a driver name, assume it should be enabled
+            $this->config = array(
+                'html_enabled' => 1,
+                'xml_enabled' => 1,
+                'priority' => '0.5',
+            );
         } else {
             // No name set by the driver, protect from trying to run
             // this sitemap.
             $this->config = array(
                 'html_enabled' => 0,
                 'xml_enabled' => 0,
+                'priority' => '0.5',
             );
+        }
+    }
+
+
+    /**
+     * Get a config value
+     *
+     * @param   string  $key    Name of config item to retrieve
+     * @return  mixed           Value of $config[$key], NULL if undefined
+     */
+    public function __get($key)
+    {
+        if (array_key_exists($key, $this->config)) {
+            return $this->config[$key];
+        } else {
+            return NULL;
         }
     }
 
@@ -199,6 +220,18 @@ class sitemap_base
             $str
         );
         return htmlspecialchars($str, ENT_QUOTES);
+    }
+
+
+    public static function enable($pi_name)
+    {
+        Sitemap\smapConfig::Add($pi_name);
+    }
+
+
+    public static function disable($pi_name)
+    {
+        Sitemap\smapConfig::Delete($pi_name);
     }
 
 }
