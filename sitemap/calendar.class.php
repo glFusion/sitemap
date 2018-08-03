@@ -94,28 +94,28 @@ class sitemap_calendar extends sitemap_base
 
         $entries = array();
 
-        $sql = "SELECT eid, title, UNIX_TIMESTAMP(concat(datestart,' ',timestart)) as date
+        $sql = "SELECT eid, title, datestart,timestart
                 FROM {$_TABLES['events']}
                 WHERE (status=1
                     AND event_type = '" . DB_escapeString($category) . "') ";
         if ($this->uid > 0) {
             $sql .= COM_getPermSql('AND', $this->uid);
         }
-        $sql .= ' ORDER BY date DESC';
+        $sql .= ' ORDER BY datestart DESC, timestart DESC';
 
         $result = DB_query($sql, 1);
         if (DB_error()) {
             COM_errorLog("sitemap_calendar::getItems() error: $sql");
             return $entries;
         }
-
         while ($A = DB_fetchArray($result, false)) {
+            if ($A['timestart'] == null) $A['timestart'] = '00:00:00';
+            $datetime = strtotime($A['datestart'].'T'.$A['timestart']);
             $entries[] = array(
                 'id'        => $A['eid'],
                 'title'     => $A['title'],
-                'uri'       => $_CONF['site_url'] . '/calendar/event.php?eid='
-                                . $A['eid'],
-                'date'      => (int)$A['date'], //(int)$A['day1'] + (int)$A['day2'],
+                'uri'       => $_CONF['site_url'].'/calendar/event.php?eid='.$A['eid'],
+                'date'      => $datetime, // $A['date'],
                 'image_uri' => false,
             );
         }
