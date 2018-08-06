@@ -607,7 +607,7 @@ class Config
                         if ($driver) $drivers[] = $driver;
                     }
                 }
-//                Cache::set($cache_key, $drivers, self::TAG);
+                Cache::set($cache_key, $drivers, self::TAG);
             }
         }
         return $drivers;
