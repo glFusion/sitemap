@@ -518,8 +518,8 @@ class Config
 
         // Check first for a plugin-supplied driver, then look for bundled
         $dirs = array(
-            $pi_name . '/sitemap/',
-            'sitemap/classes/Drivers/',
+            $pi_name . '/classes/Sitemap/',     // New namespaced driver
+            'sitemap/classes/Drivers/',         // Bundled driver if no others found
         );
 
         if (!array_key_exists($pi_name, $paths)) {

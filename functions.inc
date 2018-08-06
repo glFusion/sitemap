@@ -82,13 +82,13 @@ spl_autoload_register(function ($class)
     } elseif (strpos($class, 'sitemap_') === 0) {
         // Legacy mode. Load the sitemap_pluginname driver.
         $class = str_replace('sitemap_', '', $class);
-        $path = Sitemap\Config::getDriverPath($class);
+        $path = $_CONF['path'] . 'plugins/' . $class . '/sitemap/' . $class . '.class.php';
     } else {
         // Not a sitemap class, so just return.
         return;
     }
 
-    if (file_exists($path)) {
+    if (is_file($path)) {
         include $path;
     }
 });
