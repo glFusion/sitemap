@@ -79,6 +79,10 @@ spl_autoload_register(function ($class)
         // Legacy mode. Loading the base driver for plugins that supply
         // their own driver and use "extends sitemap_base"
         $path = __DIR__ . '/classes/' . $class . '.class.php';
+    } elseif (strpos($class, 'sitemap_') === 0) {
+        // Legacy mode. Load the sitemap_pluginname driver.
+        $class = str_replace('sitemap_', '', $class);
+        $path = Sitemap\Config::getDriverPath($class);
     } else {
         // Not a sitemap class, so just return.
         return;
