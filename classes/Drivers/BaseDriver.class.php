@@ -36,7 +36,6 @@ class BaseDriver
     {
         global $_USER;
 
-        $this->uid = (int)$_USER['uid'];
         $this->all_langs = false;   // Assume only the user's language
         $this->setHTML();           // Default to HTML sitemap
         if ($config !== NULL) {
@@ -81,7 +80,10 @@ class BaseDriver
     */
     public function setHTML()
     {
+        global $_USER;
+
         $this->smap_type = 'html';
+        $this->uid = (int)$_USER['uid'];
     }
 
 
