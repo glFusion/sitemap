@@ -34,8 +34,6 @@ class BaseDriver
     */
     public function __construct($config = NULL)
     {
-        global $_USER;
-
         $this->all_langs = false;   // Assume only the user's language
         $this->setHTML();           // Default to HTML sitemap
         if ($config !== NULL) {
