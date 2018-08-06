@@ -595,19 +595,14 @@ class Config
         static $drivers = NULL;
 
         if ($drivers === NULL) {
-            $cache_key = 'smap_drivers';
-            $drivers = Cache::get($cache_key);
-            if ($drivers === NULL) {
-                $drivers = array();
-                foreach (self::getAll() as $pi_name=>$pi_config) {
-                    // Gets all the config items, but only loads drivers for
-                    // enabled plugins
-                    if (self::piEnabled($pi_name)) {
-                        $driver = Drivers\BaseDriver::getDriver($pi_name, $pi_config);
-                        if ($driver) $drivers[] = $driver;
-                    }
+            $drivers = array();
+            foreach (self::getAll() as $pi_name=>$pi_config) {
+                // Gets all the config items, but only loads drivers for
+                // enabled plugins
+                if (self::piEnabled($pi_name)) {
+                    $driver = Drivers\BaseDriver::getDriver($pi_name, $pi_config);
+                    if ($driver) $drivers[] = $driver;
                 }
-                Cache::set($cache_key, $drivers, self::TAG);
             }
         }
         return $drivers;
