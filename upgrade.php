@@ -210,6 +210,16 @@ function _SITEMAP_remOldFiles()
         __DIR__ => array(
             // 2.0.2
             'classes/smapConfig.class.php',
+            'sitemap/article.class.php',
+            'sitemap/calendar.class.php',
+            'sitemap/dokuwiki.class.php',
+            'sitemap/filemgmt.class.php',
+            'sitemap/forum.class.php',
+            'sitemap/links.class.php',
+            'sitemap/mediagallery.class.php',
+            'sitemap/polls.class.php',
+            'sitemap/README.md',
+            'sitemap/staticpages.class.php',
         ),
         // public_html/sitemap
         $_CONF['path_html'] . $_SMAP_CONF['pi_name'] => array(
@@ -224,6 +234,8 @@ function _SITEMAP_remOldFiles()
             @unlink("$path/$file");
         }
     }
+    // Remove old driver directory (2.0.2)
+    if (is_dir(__DIR__ . '/sitemap')) @rmdir(__DIR__ . '/sitemap');
 }
 
 ?>
