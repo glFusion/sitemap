@@ -237,14 +237,19 @@ class BaseDriver
     {
         $driver = NULL;
 
+        $path = \Sitemap\Config::getDriverPath($pi_name);
+        if ($path) {
+            include_once $path;
+        }
+
         // First try to find a namespaced driver
         $cls = '\\Sitemap\\Drivers\\' . $pi_name;
-        if (class_exists($cls)) {
+        if (class_exists($cls, false)) {
             $driver = new $cls($pi_config);
         } else {
             // Temporary fallback until plugins are updated
             $cls = 'sitemap_' . $pi_name;
-            if (class_exists($cls)) {
+            if (class_exists($cls, false)) {
                 $driver = new $cls($pi_config);
             }
         }
