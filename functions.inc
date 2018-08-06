@@ -65,20 +65,20 @@ if (file_exists(__DIR__ . '/config.php')) {
 spl_autoload_register(function ($class)
 {
     $path = '';
-    if (strpos($class, 'Sitemap\\') === 0) {
+    if (strpos($class, 'Sitemap\\Drivers\\') === 0) {
+        // Loading a driver class. Could be bundled with this plugin
+        // or provided by another, so get the first path found.
+        $class = str_replace('Sitemap\\Drivers\\', '', $class);
+        $path = Sitemap\Config::getDriverPath($class);
+    } elseif (strpos($class, 'Sitemap\\') === 0) {
         // Loading an internal class. Eventually all classes should be
         // namespaced.
         $class = str_replace('Sitemap\\', '', $class);
         $path = __DIR__ . '/classes/' . $class . '.class.php';
     } elseif ($class == 'sitemap_base') {
-        // Loading the base driver class. Needed for plugins that supply
+        // Legacy mode. Loading the base driver for plugins that supply
         // their own driver and use "extends sitemap_base"
         $path = __DIR__ . '/classes/' . $class . '.class.php';
-    } elseif (strpos($class, 'sitemap_') === 0) {
-        // Loading a plugin driver, either from the plugin directory or
-        // falling back to the sitemap-supplied driver.
-        $pi_name = str_replace('sitemap_', '', $class);
-        $path = Sitemap\Config::getClassPath($pi_name);
     } else {
         // Not a sitemap class, so just return.
         return;
@@ -376,6 +376,7 @@ function SITEMAP_createGoogleSitemap()
         $key = $driver->getName() . '_xml';
         if ($driver->xml_enabled) {
             // Only add XML-enabled items
+            $driver->setXML();   // Mark as an XML sitemap
             $items = $driver->getItems();
         } else {
             // Delete the cached XML sitemap in case xml was disabled

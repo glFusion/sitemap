@@ -43,7 +43,8 @@ $LANG_SMAP = array (
     'access_denied_msg' => 'Only Root Users have Access to this Page.  Your user name and IP have been recorded.',
     'admin'                => 'sitemap Plugin Admin',
     'admin_help'        => 'Check the boxes to change whether each element appears in the files or online sitemap. Use the selections to change the frequency and priority, and click on the arrows to change order in which the elements appear in the sitemaps. Changes take effect immediately.
-<p>To immediately recreate the sitemap XML files, click &quot;Update now&quot;.',
+<p>To immediately recreate the sitemap XML files, click &quot;Update now&quot;.
+<br>Click &quot;Clear Cache&quot; to clear all sitemap data and configurations from the cache.',
     'error'             => 'Installation Error',
     'install_header'    => 'Install/Uninstall the sitemap Plugin',
     'install_success'    => 'Installation Successful',
@@ -124,6 +125,7 @@ $LANG_SMAP = array (
     'uncategorized' => 'Uncategorized',
     'untitled' => 'Untitled',
     'xml_sitemap_error' => 'Unable to create XML sitemap due to PHP configuration: \'short_open_tag\' must be set to Off',
+    'clear_cache' => 'Clear Cache',
 );
 
 // Localization of the Admin Configuration UI

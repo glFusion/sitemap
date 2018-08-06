@@ -120,6 +120,7 @@ $LANG_SMAP = array (
     'uncategorized' => 'Uncategorized',
     'untitled' => 'Untitled',
     'xml_sitemap_error' => 'Unable to create XML sitemap due to PHP configuration: \'short_open_tag\' must be set to Off',
+    'clear_cache' => 'Clear Cache',
 );
 
 // Localization of the Admin Configuration UI

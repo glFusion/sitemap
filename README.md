@@ -67,17 +67,18 @@ in the "sitemap" subdirectory under the plugin's private directory. Example:
 
     private/plugins/myplugin/sitemap/myplugin.class.php
 
-The class must be named "sitemap_<plugin_name>" and should extend
-the sitemap_base class provided by this plugin. Each supported function
+The class must be named "<plugin_name>" and should extend
+the BaseDriver class provided by this plugin. Each supported function
 is provided in the base clase and returns a reasonable default to prevent errors.
 
 Newly installed or removed plugins that include a sitemap drivers are
 automatically added to or removed from the configuration each time the admin
 page is accessed. New plugins are enabled and placed at the end of the sitemap.
 
-Example:
+Example `plugins/myplugin/sitemap/myplugin.class.php`:
 ```php
-class sitemap_myplugin extends sitemap_base
+namespace Sitemap\Drivers;
+class myplugin extends BaseDriver
 {
     // Required. Define the plugin name.
     protected $name = 'myplugin';

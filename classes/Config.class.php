@@ -236,17 +236,13 @@ class Config
             $html = 1;
             $xml = 1;
             $prio = '0.5';
-            //if (!in_array($pi_name, self::$local) &&
-            //    is_file(self::getClassPath($pi_name))) {
             if (self::piEnabled($pi_name)) {
-                $classname = 'sitemap_' . $pi_name;
-                $S = new $classname();
-                if (!$S) continue;
-                $html = (int)$S->html_enabled;
-                $xml = (int)$S->xml_enabled;
-                $priority = (float)$S->priority;
+                $driver = Drivers\BaseDriver::getDriver($pi_name);
+                if (!$driver) continue;
             }
-
+            $html = (int)$driver->html_enabled;
+            $xml = (int)$driver->xml_enabled;
+            $priority = (float)$driver->priority;
             $values[] = "('" . DB_escapeString($pi_name) .
                     "', $html, $xml, 9900, $priority)";
         }
@@ -491,7 +487,7 @@ class Config
             }
             // Don't use self::piEnabled() here since we're looking for plugins
             // that are actually uninstalled, not just disabled
-            if (!isset($_PLUGIN_INFO[$pi_name]) || !is_file(self::getClassPath($pi_name))) {
+            if (!isset($_PLUGIN_INFO[$pi_name]) || !is_file(self::getDriverPath($pi_name))) {
                 $values[] = $pi_name;
             }
         }
@@ -515,22 +511,22 @@ class Config
     *   @param  string  $pi_name    Name of plugin
     *   @return string      Path to driver file, or NULL if not found
     */
-    public static function getClassPath($pi_name)
+    public static function getDriverPath($pi_name)
     {
         global $_CONF, $_SMAP_CONF;
         static $paths = array();
 
         // Check first for a plugin-supplied driver, then look for bundled
         $dirs = array(
-            $pi_name,
-            'sitemap',
+            $pi_name . '/sitemap/',
+            'sitemap/classes/Drivers/',
         );
 
         if (!array_key_exists($pi_name, $paths)) {
             $paths[$pi_name] = NULL;
             foreach ($dirs as $dir) {
                 $path = $_CONF['path'] . '/plugins/' . $dir .
-                        '/sitemap/' . $pi_name . '.class.php';
+                    $pi_name . '.class.php';
                 if (is_file($path)) {
                     $paths[$pi_name] = $path;
                     break;
@@ -607,14 +603,11 @@ class Config
                     // Gets all the config items, but only loads drivers for
                     // enabled plugins
                     if (self::piEnabled($pi_name)) {
-                        $path = self::getClassPath($pi_name);
-                        if ($path) {
-                            $cls = 'sitemap_' . $pi_name;
-                            $drivers[] = new $cls($pi_config);
-                        }
+                        $driver = Drivers\BaseDriver::getDriver($pi_name, $pi_config);
+                        if ($driver) $drivers[] = $driver;
                     }
                 }
-                Cache::set($cache_key, $drivers, self::TAG);
+//                Cache::set($cache_key, $drivers, self::TAG);
             }
         }
         return $drivers;
@@ -638,7 +631,7 @@ class Config
         if (!isset($plugins[$pi_name])) {
             if ( (!in_array($pi_name, $_PLUGINS) &&
                 !in_array($pi_name, self::$local) ) ||
-                !is_file(self::getClassPath($pi_name))) {
+                !is_file(self::getDriverPath($pi_name))) {
                 $plugins[$pi_name] = false;
             } else {
                 $plugins[$pi_name] = true;
