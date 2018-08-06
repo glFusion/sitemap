@@ -69,7 +69,7 @@ spl_autoload_register(function ($class)
         // Loading a driver class. Could be bundled with this plugin
         // or provided by another, so get the first path found.
         $class = str_replace('Sitemap\\Drivers\\', '', $class);
-        $path = Sitemap\Config::getDriverPath($class);
+        $path = Sitemap\Config::getDriverPath($class, false);   // no legacy
     } elseif (strpos($class, 'Sitemap\\') === 0) {
         // Loading an internal class. Eventually all classes should be
         // namespaced.
