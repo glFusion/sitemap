@@ -108,7 +108,8 @@ class dokuwiki extends BaseDriver
                         . 'doku.php/' . $entry['id'];
                         break;
                     default:
-                        continue;
+//                        continue;
+                        break;
                 }
                 $entry['date']      = false;
                 $entry['image_uri'] = false;
