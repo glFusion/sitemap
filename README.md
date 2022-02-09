@@ -1,17 +1,18 @@
 # SiteMap Plugin for glFusion
-Version: 2.0.2
 
 For the latest documentation, please see
 
-https://www.glfusion.org/wiki/glfusion:plugins:sitemap:start
+<https://www.glfusion.org/wiki/glfusion:plugins:sitemap:start>
 
 ## License
+
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
 Foundation; either version 2 of the License, or (at your option) any later
 version.
 
 ## Description
+
 The SiteMap plugin creates a Google compatible sitemap.xml file of your
 site's content. It also provides an interactive Site Map for your site's
 users. A mobile-compatible sitemap named "mobile.xml" can also be created.
@@ -20,23 +21,28 @@ SiteMap honors content permissions, only showing those items which the
 user has permissions to view.
 
 ## System Requirements
+
 SiteMap has the following system requirements:
 
     * PHP 5.6.0 and higher.
     * glFusion v1.7.0 or newer
 
 ## Installation
+
 The SiteMap  Plugin uses the glFusion automated plugin installer.
 Simply upload the distribtuion using the glFusion plugin installer located in
 the Plugin Administration page.
 
 ## Upgrading
+
 The upgrade process is identical to the installation process, simply upload
 the distribution from the Plugin Administration page.
 
 ## Configuration
+
 Global sitemap configuration is done through the glFusion Configuration panel.
 There are currently only three configuration options:
+
 1. Sitemap Name
     * A semicolon-delimited list of filenames to use for the XML sitemap files.
     * A filename beginning with "mobile" creates a mobile version of the sitemap.
@@ -58,6 +64,7 @@ There are currently only three configuration options:
     * Manually - sitemaps are only regenerated when the Administrator does so via the admin panel
 
 ## Plugin Integration
+
 A collection of sitemap drivers for the bundled plugins is included in the
 Sitemap Plugin distribution.
 
@@ -76,6 +83,7 @@ automatically added to or removed from the configuration each time the admin
 page is accessed. New plugins are enabled and placed at the end of the sitemap.
 
 Example `plugins/myplugin/sitemap/myplugin.class.php`:
+
 ```php
 namespace Sitemap\Drivers;
 class myplugin extends BaseDriver
