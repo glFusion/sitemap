@@ -3,6 +3,8 @@
 ## v2.0.5
 
 - glFusion LTS and v2 support
+- Upgrade referenced incorrect class name
+- Minor code cleanup
 
 ## v2.0.4
 
