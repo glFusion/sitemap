@@ -356,7 +356,7 @@ class Config
         // Ensure that the new value is a valid priority. If not,
         // return the original value.
         $good = false;
-        foreach ($_SMAP_CONF['priorities'] as $prio) {
+        foreach ((array) $_SMAP_CONF['priorities'] as $prio) {
             if ($newvalue == $prio) {
                 $good = true;
                 break;
@@ -391,11 +391,11 @@ class Config
 
         $this->freq = $newfreq;
         // Make sure the new value is valid
-        if (array_key_exists($newfreq, $LANG_SMAP['freqs'])) {
+        if (array_key_exists($newfreq, (array) $LANG_SMAP['freqs'])) {
             DB_change($_TABLES['smap_maps'], 'freq', $newfreq,'pi_name', $this->pi_name);
             if (DB_error()) {
                 // Log error and return the old value
-                COM_errorLog("Config::updateFreq error: $sql");
+                COM_errorLog("Config::updateFreq error");
             } else {
                 // Update the in-memory config and return the new value
                 $this->freq = $newfreq;
@@ -426,7 +426,7 @@ class Config
                 $type . '_enabled', $newval,
                 'pi_name', DB_escapeString($pi_name));
         if (DB_error()) {
-            COM_errorLog("Config::toggle() error: $sql");
+            COM_errorLog("Config::toggle() error");
             return $oldval;
         } else {
             Cache::clear($pi_name);
