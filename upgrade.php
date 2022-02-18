@@ -152,6 +152,9 @@ function sitemap_upgrade()
         case '2.0.3' :
             // no changes
 
+        case '2.0.4' :
+            // no changes
+
         default:
             DB_query("UPDATE {$_TABLES['plugins']} SET pi_version='".$_SMAP_CONF['pi_version']."',pi_gl_version='".$_SMAP_CONF['gl_version']."' WHERE pi_name='sitemap' LIMIT 1");
             break;

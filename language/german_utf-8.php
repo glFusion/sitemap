@@ -2,12 +2,11 @@
 // +--------------------------------------------------------------------------+
 // | Site Map Plugin for glFusion                                             |
 // +--------------------------------------------------------------------------+
-// | german_utf-8.php                                                         |
+// | english_utf-8.php                                                        |
 // |                                                                          |
-// | German Language File (UTF-8 Version)                                     |
-// | Modifiziert: August 09 Tony Kluever                                      |
+// | English Language File (UTF-8 Version)                                    |
 // +--------------------------------------------------------------------------+
-// | Copyright (C) 2009-2015 by the following authors:                        |
+// | Copyright (C) 2009-2017 by the following authors:                        |
 // |                                                                          |
 // | Mark R. Evans          mark AT glfusion DOT org                          |
 // |                                                                          |
@@ -42,13 +41,13 @@ $LANG_SMAP = array (
     'plugin'            => 'Sitemap-Plugin',
     'access_denied'     => 'Zugriff verweigert',
     'access_denied_msg' => 'Nur Root-Benutzer haben Zugriff auf diese Seite. Dein Benutzername und IP wurden aufgezeichnet.',
-    'admin'             => 'Sitemap-Plugin-Admin',
+    'admin'                => 'Sitemap-Plugin-Admin',
     'admin_help'        => 'Check the boxes to change whether each element appears in the files or online sitemap. Use the selections to change the frequency and priority, and click on the arrows to change order in which the elements appear in the sitemaps. Changes take effect immediately.
 <p>To immediately recreate the sitemap XML files, click &quot;Update now&quot;.',
     'error'             => 'Installationsfehler',
     'install_header'    => 'Sitemap-Plugin - Installation/Deinstallation',
     'install_success'    => 'Installation erfolgreich',
-    'install_fail'       => 'Installation fehlgeschlagen -- Schau in die Datei error.log für mehr Infos.',
+    'install_fail'        => 'Installation fehlgeschlagen -- Schau in die Datei error.log für mehr Infos.',
     'uninstall_success'    => 'Deinstallation erfolgreich',
     'uninstall_fail'    => 'Deinstallation fehlgeschlagen -- Schau in die Datei error.log für mehr Infos.',
     'uninstall_msg'        => 'Sitemap-Plugin wurde erfolgreich installiert.',
@@ -147,14 +146,13 @@ $LANG_configsubgroups['sitemap'] = array(
 $LANG_fs['sitemap'] = array(
     'fs_main' => 'Main Sitemap Settings',
 );
-
 // Note: entries 0, 1, and 12 are the same as in $LANG_configselects['Core']
-$LANG_configselects['sitemap'] = array(
-    0 => array('True' => 1, 'False' => 0),
-    1 => array('True' => TRUE, 'False' => FALSE),
-    3 => array('Yes' => 1, 'No' => 0),
-    4 => array('No Access' => 0, 'Logged-In Only' => 1, 'All Users' => 2),
-    5 => array('Always' => 0, 'If Content Changes' => 1, 'Manually' => 2),
+$LANG_configSelect['sitemap'] = array(
+    0 => array(1 => 'True', 0 => 'False'),
+    1 => array(true => 'True', false => 'False'),
+    3 => array(1 => 'Yes', 0 => 'No'),
+    4 => array(0 => 'No Access', 1 => 'Logged-In Only', 2 => 'All Users'),
+    5 => array(0 => 'Always', 1 => 'If Content Changes', 2 => 'Manually'),
 );
 
 ?>

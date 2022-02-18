@@ -1,5 +1,9 @@
 # SiteMap Plugin ChangeLog
 
+## v2.0.5
+
+- glFusion LTS and v2 support
+
 ## v2.0.4
 
 - PHP v8 compatibility fixes

@@ -49,6 +49,14 @@ if (file_exists($langfile)) {
     include_once __DIR__ . '/language/english.php';
 }
 
+if (version_compare(GVERSION,'2.0.0','lt')) {
+    if (isset($LANG_configSelect['sitemap']) && !isset($LANG_configselects['sitemap'])) {
+        foreach ($LANG_configSelect['sitemap'] AS $cfgItem) {
+            $LANG_configselects['sitemap'][] = array_flip($cfgItem);
+        }
+    }
+}
+
 /** Import the configuration class, if needed */
 global $_SMAP_CONF;
 require_once $_CONF['path_system'] . 'classes/config.class.php';
