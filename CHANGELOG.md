@@ -5,6 +5,7 @@
 - glFusion LTS and v2 support
 - Upgrade referenced incorrect class name
 - Minor code cleanup
+- Czech translation
 
 ## v2.0.4
 
