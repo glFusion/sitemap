@@ -2,11 +2,11 @@
 // +--------------------------------------------------------------------------+
 // | Site Map Plugin for glFusion                                             |
 // +--------------------------------------------------------------------------+
-// | dutch.php                                                                |
+// | english_utf-8.php                                                        |
 // |                                                                          |
-// | English Language File                                                    |
+// | English Language File (UTF-8 Version)                                    |
 // +--------------------------------------------------------------------------+
-// | Copyright (C) 2009-2015 by the following authors:                        |
+// | Copyright (C) 2009-2017 by the following authors:                        |
 // |                                                                          |
 // | Mark R. Evans          mark AT glfusion DOT org                          |
 // |                                                                          |
@@ -44,12 +44,15 @@ $LANG_SMAP = array (
     'admin'                => 'sitemap Plugin Beheer',
     'admin_help'        => 'Check the boxes to change whether each element appears in the files or online sitemap. Use the selections to change the frequency and priority, and click on the arrows to change order in which the elements appear in the sitemaps. Changes take effect immediately.
 <p>To immediately recreate the sitemap XML files, click &quot;Update now&quot;.',
+    'error'             => 'Installation Error',
     'install_header'    => 'Installeer/Verwijder de sitemap Plugin',
     'install_success'    => 'Installatie Succesvol',
     'install_fail'        => 'Installatie Mislukt -- See your error log to find out why.',
     'uninstall_success'    => 'Verwijderen Succesvol',
     'uninstall_fail'    => 'Installatie Mislukt -- See your error log to find out why.',
     'uninstall_msg'        => 'sitemap plugin is succesvol verwijderd.',
+    'dataproxy_required' => 'The Data Proxy plugin must be installed and enabled prior to installing the Site Map Plugin',
+    'version_required'  => 'The Site Map Plugin requires glFusion v1.1.0 or newer',
     'menu_label'        => 'Sitemap',
     'sitemap'           => 'Sitemap',
     'submit'            => 'Opslaan',
@@ -67,6 +70,7 @@ $LANG_SMAP = array (
     'faqman'            => 'FAQ',
     'mediagallery'      => 'Media Gallery',
     'evlist'            => 'evList',
+    'classifieds'       => 'Classified Ads',
     'sitemap_setting'   => 'Sitemap Instellingen',
     'sitemap_setting_misc' => 'Scherm Instellingen',
     'order'             => 'Scherm Volgorde',
@@ -142,14 +146,13 @@ $LANG_configsubgroups['sitemap'] = array(
 $LANG_fs['sitemap'] = array(
     'fs_main' => 'Main Sitemap Settings',
 );
-
 // Note: entries 0, 1, and 12 are the same as in $LANG_configselects['Core']
-$LANG_configselects['sitemap'] = array(
-    0 => array('True' => 1, 'False' => 0),
-    1 => array('True' => TRUE, 'False' => FALSE),
-    3 => array('Yes' => 1, 'No' => 0),
-    4 => array('No Access' => 0, 'Logged-In Only' => 1, 'All Users' => 2),
-    5 => array('Always' => 0, 'If Content Changes' => 1, 'Manually' => 2),
+$LANG_configSelect['sitemap'] = array(
+    0 => array(1 => 'True', 0 => 'False'),
+    1 => array(true => 'True', false => 'False'),
+    3 => array(1 => 'Yes', 0 => 'No'),
+    4 => array(0 => 'No Access', 1 => 'Logged-In Only', 2 => 'All Users'),
+    5 => array(0 => 'Always', 1 => 'If Content Changes', 2 => 'Manually'),
 );
 
 ?>

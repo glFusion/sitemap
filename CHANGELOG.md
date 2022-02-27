@@ -1,5 +1,12 @@
 # SiteMap Plugin ChangeLog
 
+## v2.0.5
+
+- glFusion LTS and v2 support
+- Upgrade referenced incorrect class name
+- Minor code cleanup
+- Czech translation
+
 ## v2.0.4
 
 - PHP v8 compatibility fixes

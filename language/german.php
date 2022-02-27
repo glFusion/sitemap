@@ -147,14 +147,13 @@ $LANG_configsubgroups['sitemap'] = array(
 $LANG_fs['sitemap'] = array(
     'fs_main' => 'Main Sitemap Settings',
 );
-
 // Note: entries 0, 1, and 12 are the same as in $LANG_configselects['Core']
-$LANG_configselects['sitemap'] = array(
-    0 => array('True' => 1, 'False' => 0),
-    1 => array('True' => TRUE, 'False' => FALSE),
-    3 => array('Yes' => 1, 'No' => 0),
-    4 => array('No Access' => 0, 'Logged-In Only' => 1, 'All Users' => 2),
-    5 => array('Always' => 0, 'If Content Changes' => 1, 'Manually' => 2),
+$LANG_configSelect['sitemap'] = array(
+    0 => array(1 => 'True', 0 => 'False'),
+    1 => array(true => 'True', false => 'False'),
+    3 => array(1 => 'Yes', 0 => 'No'),
+    4 => array(0 => 'No Access', 1 => 'Logged-In Only', 2 => 'All Users'),
+    5 => array(0 => 'Always', 1 => 'If Content Changes', 2 => 'Manually'),
 );
 
 ?>

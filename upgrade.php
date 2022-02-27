@@ -121,7 +121,7 @@ function sitemap_upgrade()
                     continue;
                 }
                 $pi_confs[] = $pi_name;
-                $pi_conf = new smapConfig($pi_name);
+                $pi_conf = new \Sitemap\Config($pi_name);
                 $pi_conf->Save(array(
                     'priority' => $conf['priority_' . $pi_name],
                     'freq' => $conf['freq_' . $pi_name],
@@ -131,7 +131,7 @@ function sitemap_upgrade()
                 ));
             }
             // clean up configs for added and removed plugins
-            smapConfig::updateConfigs();
+            \Sitemap\Config::updateConfigs();
 
             // remove old config table
             DB_query("DROP table {$_TABLES['smap_config']}",1);
@@ -150,6 +150,9 @@ function sitemap_upgrade()
             // no changes
 
         case '2.0.3' :
+            // no changes
+
+        case '2.0.4' :
             // no changes
 
         default:
