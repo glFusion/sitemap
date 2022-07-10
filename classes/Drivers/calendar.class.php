@@ -1,17 +1,20 @@
 <?php
 /**
-*   Sitemap driver for the Calendar Plugin.
-*
-*   @author     Mark R. Evans <mark@glfusion.org>
-*   @copyright  Copyright (c) 2008-2018 Mark R. Evans <mark AT glfusion DOT org>
-*   @copyright  Copyright (c) 2007-2008 Mystral-kk <geeklog@mystral-kk.net>
-*   @package    glfusion
-*   @version    2.0.0
-*   @license    http://opensource.org/licenses/gpl-2.0.php
-*               GNU Public License v2 or later
-*   @filesource
-*/
+ * Sitemap driver for the Calendar Plugin.
+ *
+ * @author     Mark R. Evans <mark@glfusion.org>
+ * @copyright  Copyright (c) 2008-2018 Mark R. Evans <mark AT glfusion DOT org>
+ * @copyright  Copyright (c) 2007-2008 Mystral-kk <geeklog@mystral-kk.net>
+ * @package    glfusion
+ * @version    2.1.0
+ * @license    http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
+ */
 namespace Sitemap\Drivers;
+use glFusion\Database\Database;
+use glFusion\Log\Log;
+use Sitemap\Models\Item;
 
 // this file can't be used on its own
 if (!defined ('GVERSION')) {
@@ -19,15 +22,19 @@ if (!defined ('GVERSION')) {
 }
 
 
+/**
+ * Calendar plugin sitemap driver.
+ * @package sitemap
+ */
 class calendar extends BaseDriver
 {
     protected $name = 'calendar';
 
     /**
-    *   Get the friendly display name;
-    *
-    *   @return sring   Display Name
-    */
+     * Get the friendly display name.
+     *
+     * @return  string   Display Name
+     */
     public function getDisplayName()
     {
         global $LANG_CAL_1;
@@ -36,13 +43,13 @@ class calendar extends BaseDriver
 
 
     /**
-    *   Get the child categories under the supplied category ID.
-    *   Only primary categories (event types) are supported.
-    *
-    *   @param  mixed   $pid    Parent category, must be false.
-    *   @return array   Array of category information.
-    */
-    function getChildCategories($pid = false)
+     * Get the child categories under the supplied category ID.
+     * Only primary categories (event types) are supported.
+     *
+     * @param   mixed   $pid    Parent category, must be false.
+     * @return  array   Array of category information.
+     */
+    public function getChildCategories($pid = false)
     {
         global $_CONF, $_TABLES, $LANG_SMAP;
 
@@ -52,81 +59,100 @@ class calendar extends BaseDriver
             return $entries;        // sub-categories not supported
         }
 
-        $sql = "SELECT DISTINCT event_type FROM {$_TABLES['events']}
-                ORDER BY event_type";
-        $result = DB_query($sql, 1);
-        if (DB_error()) {
-            COM_errorLog("sitemap_calendar::getChildCategories error: $sql");
-            return $entries;
+        $db = Database::getInstance();
+        try {
+            $data = $db->conn->executeQuery(
+                "SELECT DISTINCT event_type FROM {$_TABLES['events']}
+                ORDER BY event_type"
+            )->fetchAllAssociative();
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $data = false;
         }
 
-        while (($A = DB_fetchArray($result, false)) !== FALSE) {
-            // Replace empty title string with "uncategorized"
-            $title = $A['event_type'];
-            if (empty($title)) $title = $LANG_SMAP['uncategorized'];
-            $entries[] = array(
-                'id'        => $A['event_type'],
-                'pid'       => false,
-                'title'     => $title,
-                'uri'       => false,
-                'date'      => false,
-                'image_uri' => false,
-            );
+        if (is_array($data)) {
+            foreach ($data as $A) {
+                // Replace empty title string with "uncategorized"
+                $title = $A['event_type'];
+                if (empty($title)) $title = $LANG_SMAP['uncategorized'];
+                $item = new Item;
+                $item['id'] = $A['event_type'];
+                $item['title'] = $title;
+                    /*'id'        => $A['event_type'],
+                    'pid'       => false,
+                    'title'     => $title,
+                    'uri'       => false,
+                    'date'      => false,
+                    'image_uri' => false,
+                );*/
+                $entries[] = $item->toArray();
+            }
         }
         return $entries;
     }
 
 
     /**
-    *   Get all the items under the given category.
-    *
-    *   @param  string  $category   Category (event type)
-    *   @return array   Array of (
-    *       'id'        => $id (string),
-    *       'title'     => $title (string),
-    *       'uri'       => $uri (string),
-    *       'date'      => $date (int: Unix timestamp),
-    *       'image_uri' => $image_uri (string)
-    *   )
-    */
-    function getItems($category = '*')
+     * Get all the items under the given category.
+     *
+     * @param  string  $category   Category (event type)
+     * @return array   Array of (
+     *      'id'        => $id (string),
+     *      'title'     => $title (string),
+     *      'uri'       => $uri (string),
+     *      'date'      => $date (int: Unix timestamp),
+     *      'image_uri' => $image_uri (string)
+     * )
+     */
+    public function getItems($category = '*')
     {
         global $_CONF, $_TABLES;
 
         $entries = array();
 
-        if ($category == '*') {
-            $categorySQL = '';
-        } else {
-            $categorySQL = ' AND event_type = "'.DB_escapeString($category).'" ';
+        $db = Database::getInstance();
+        $qb = $db->conn->createQueryBuilder();
+        $qb->select('eid', 'title', 'datestart', 'timestart')
+           ->from($_TABLES['events'])
+           ->where('status = 1')
+           ->orderBy('datestart', 'DESC')
+           ->addOrderBy('timestart', 'DESC');
+
+        if ($category != '*') {
+            $qb->andWhere('event_type = :category')
+               ->setParameter('category', $category, Database::STRING);
         }
 
-        $sql = "SELECT eid, title, datestart,timestart
+        /*$sql = "SELECT eid, title, datestart,timestart
                 FROM {$_TABLES['events']}
-                WHERE (status=1 " . $categorySQL . ") ";
+                WHERE (status=1 " . $categorySQL . ") ";*/
 
         if ($this->uid > 0) {
-            $sql .= COM_getPermSql('AND', $this->uid);
+            $qb->andWhere($db->getPermSql('', $this->uid));
+            //$sql .= COM_getPermSql('AND', $this->uid);
         }
-        $sql .= ' ORDER BY datestart DESC, timestart DESC';
+        //$sql .= ' ORDER BY datestart DESC, timestart DESC';
 
-        $result = DB_query($sql);
-        if (DB_error()) {
-            COM_errorLog("sitemap_calendar::getItems() error: $sql");
-            return $entries;
+        try {
+            $stmt = $qb->execute();
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $stmt = false;
         }
-        while ($A = DB_fetchArray($result, false)) {
-            if ($A['timestart'] == null) $A['timestart'] = '00:00:00';
-            $datetime = strtotime($A['datestart'].'T'.$A['timestart']);
-            $entries[] = array(
-                'id'        => $A['eid'],
-                'title'     => $A['title'],
-                'uri'       => $_CONF['site_url'].'/calendar/event.php?eid='.$A['eid'],
-                'date'      => $datetime, // $A['date'],
-                'image_uri' => false,
-            );
+
+        if ($stmt) {
+            while ($A = $stmt->fetchAssociative()) {
+                if ($A['timestart'] == null) $A['timestart'] = '00:00:00';
+                $datetime = strtotime($A['datestart'].'T'.$A['timestart']);
+                $item = new Item;
+                $item['id'] = $A['eid'];
+                $item['title'] = $A['title'];
+                $item['uri'] = $_CONF['site_url'].'/calendar/event.php?eid='.$A['eid'];
+                $item['date'] = $datetime;
+                $entries[] = $item->toArray();
+            }
         }
         return $entries;
     }
 }
-?>
+

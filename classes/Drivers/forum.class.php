@@ -1,43 +1,30 @@
 <?php
-// +--------------------------------------------------------------------------+
-// | Data Proxy Plugin for glFusion                                           |
-// +--------------------------------------------------------------------------+
-// | forum.class.php                                                          |
-// |                                                                          |
-// | Forum Plugin interface                                                   |
-// +--------------------------------------------------------------------------+
-// | Copyright (C) 2009-2015 by the following authors:                        |
-// |                                                                          |
-// | Mark R. Evans          mark AT glfusion DOT org                          |
-// |                                                                          |
-// | Based on the Data Proxy Plugin                                           |
-// | Copyright (C) 2007-2008 by the following authors:                        |
-// |                                                                          |
-// | Authors: mystral-kk        - geeklog AT mystral-kk DOT net               |
-// +--------------------------------------------------------------------------+
-// |                                                                          |
-// | This program is free software; you can redistribute it and/or            |
-// | modify it under the terms of the GNU General Public License              |
-// | as published by the Free Software Foundation; either version 2           |
-// | of the License, or (at your option) any later version.                   |
-// |                                                                          |
-// | This program is distributed in the hope that it will be useful,          |
-// | but WITHOUT ANY WARRANTY; without even the implied warranty of           |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
-// | GNU General Public License for more details.                             |
-// |                                                                          |
-// | You should have received a copy of the GNU General Public License        |
-// | along with this program; if not, write to the Free Software Foundation,  |
-// | Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.          |
-// |                                                                          |
-// +--------------------------------------------------------------------------+
+/**
+ *   Forum driver for the Sitemap plugin.
+ *   Derived from the Dataproxy plugin.
+ *
+ *   @author     Mark R. Evans  <mark AT glfusion DOT org
+ *   @copyright  
+ *   @package    sitemap
+ *   @version    2.0.2
+ *   @license    http://opensource.org/licenses/gpl-2.0.php
+ *               GNU Public License v2 or later
+ *   @filesource
+ */
 namespace Sitemap\Drivers;
+use glFusion\Database\Database;
+use glFusion\Log\Log;
+use Sitemap\Models\Item;
 
 // this file can't be used on its own
 if (!defined ('GVERSION')) {
     die ('This file can not be used on its own.');
 }
 
+/**
+ * Forum sitemap driver class.
+ * @package sitemap
+ */
 class forum extends BaseDriver
 {
     protected $name = 'forum';
@@ -59,81 +46,80 @@ class forum extends BaseDriver
             return $entries;
         }
 
+        $db = Database::getInstance();
         $sql = "SELECT forum_id, forum_name FROM {$_TABLES['ff_forums']}
                 WHERE (is_hidden = '0') ";
         if ($this->uid > 0) {
-            $sql .= SEC_buildAccessSql('AND', 'grp_id');
+            $sql .= $this->buildAccessSql('AND', 'grp_id');
         }
         $sql .= ' ORDER BY forum_order';
-        $result = DB_query($sql, 1);
-        if (DB_error()) {
-            COM_errorLog("sitemap_forum::getChildCategories() error: $sql");
-            return $entries;
+        try {
+            $stmt = $db->conn->executeQuery($sql);
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $stmt = false;
         }
-
-        while (($A = DB_fetchArray($result, false)) !== FALSE) {
-            $entries[] = array(
-                'id'        => (int)$A['forum_id'],
-                'pid'       => false,
-                'title'     => $A['forum_name'],
-                'uri'       => self::getEntryPoint() . '?forum=' . $A['forum_id'],
-                'date'      => false,
-                'image_uri' => false,
-            );
+        if ($stmt) {
+            while ($A = $stmt->fetchAssociative()) {
+                $item = new Item;
+                $item['id'] = (int)$A['forum_id'];
+                $item['title'] = $A['forum_name'];
+                $item['uri'] = self::getEntryPoint() . '?forum=' . $A['forum_id'];
+                $entries[] = $item->toArray();
+            }
         }
         return $entries;
     }
 
 
     /**
-    * Returns an array of (
-    *   'id'        => $id (string),
-    *   'title'     => $title (string),
-    *   'uri'       => $uri (string),
-    *   'date'      => $date (int: Unix timestamp),
-    *   'image_uri' => $image_uri (string)
-    * )
-    */
+     * Returns an array of (
+     *   'id'        => $id (string),
+     *   'title'     => $title (string),
+     *   'uri'       => $uri (string),
+     *   'date'      => $date (int: Unix timestamp),
+     *   'image_uri' => $image_uri (string)
+     * )
+     */
     public function getItems($forum_id = false)
     {
         global $_CONF, $_TABLES;
 
         $entries = array();
 
+        $db = Database::getInstance();
+        $qb = $db->conn->createQueryBuilder();
+        $qb->select('t.id', 't.subject', 't.lastupdated')
+           ->from($_TABLES['ff_topic'], 't')
+           ->where('t.pid = 0')
+           ->orderBy('t.lastupdated', 'DESC');
         if ($forum_id === false) {
-            $groups = array ();
-            $usergroups = SEC_getUserGroups(1);
-            foreach ($usergroups as $group) {
-                $groups[] = $group;
-            }
-            $grouplist = implode(',',$groups);
-             $sql  = "SELECT a.id, a.subject, a.lastupdated, b.grp_id
-                    FROM {$_TABLES['ff_topic']} a
-                    LEFT JOIN {$_TABLES['ff_forums']} b ON a.forum = b.forum_id ";
-            $sql .= "WHERE (pid=0) AND b.grp_id IN ($grouplist) ORDER BY a.lastupdated DESC";
+            $qb->leftJoin('t', $_TABLES['ff_forums'], 'f', 't.forum = f.forum')
+               ->andWhere('f.grp_id IN :groups')
+               ->setParameter('groups', SEC_getUserGroups(1), Database::PARAM_INT_ARRAY);
         } else {
-            $sql = "SELECT id, subject, lastupdated FROM {$_TABLES['ff_topic']}
-                    WHERE (pid = 0) AND (forum = '" . DB_escapeString($forum_id) ."')
-                    ORDER BY lastupdated DESC";
+            $qb->andWhere('forum = :forum_id')
+               ->setParameter('forum_id', $forum_id, Database::INTEGER);
         }
-        $result = DB_query($sql, 1);
-        if (DB_error()) {
-            COM_errorLog("sitemap_forum::getItems() error: $sql");
-            return $entries;
+        try {
+            $stmt = $qb->execute();
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $stmt = false;
         }
 
-        while (($A = DB_fetchArray($result, false)) !== FALSE) {
-            $entries[] = array(
-                'id'        => $A['id'],
-                'title'     => $A['subject'],
-                'uri'       => $_CONF['site_url'] . '/forum/viewtopic.php?showtopic='.$A['id'],
-                'date'      => $A['lastupdated'],
-                'image_uri' => false,
-            );
+        if ($stmt) {
+            while ($A = $stmt->fetchAssociative()) {
+                $item = new Item;
+                $item['id'] = $A['id'];
+                $item['title'] = $A['subject'];
+                $item['uri'] = $_CONF['site_url'] . '/forum/viewtopic.php?showtopic='.$A['id'];
+                $item['date'] = $A['lastupdated'];
+                $entries[] = $item->toArray();
+            }
         }
         return $entries;
     }
 
 }
 
-?>

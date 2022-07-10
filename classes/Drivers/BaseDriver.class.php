@@ -1,38 +1,40 @@
 <?php
 /**
-*   Base class for sitemaps.
-*   Derived from the Dataproxy plugin. Each plugin that wishes to
-*   contribute a sitemap should supply a class in its "sitemap"
-*   directory named "<plugin_name>.class.php". The class name should be
-*   "<plugin_name>" and extend this base class.
-*
-*   @author     Lee Garner <lee@leegarner.com>
-*   @copyright  Copyright (c) 2017-2018 Lee Garner <lee@leegarner.com>
-*   @package    sitemap
-*   @version    2.0.2
-*   @license    http://opensource.org/licenses/gpl-2.0.php
-*               GNU Public License v2 or later
-*   @filesource
-*/
+ * Base class for sitemaps.
+ * Derived from the Dataproxy plugin. Each plugin that wishes to
+ * contribute a sitemap should supply a class in its "sitemap"
+ * directory named "<plugin_name>.class.php". The class name should be
+ * "<plugin_name>" and extend this base class.
+ *
+ * @author      Lee Garner <lee@leegarner.com>
+ * @copyright   Copyright (c) 2017-2018 Lee Garner <lee@leegarner.com>
+ * @package     sitemap
+ * @version     v2.1.0
+ * @license     http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
+ */
 namespace Sitemap\Drivers;
 
 /**
-*   Class for sitemap items
-*/
+ * Class for sitemap items.
+ * @package sitemap
+ */
 class BaseDriver
 {
     protected $uid;
+    protected $groups;
     protected $all_langs;   // true to include all languages
     protected $smap_type;   // HTML or XML
     protected $name;        // Name of this plugin or sitemap type
     protected $config;      // Config elements for this driver
 
     /**
-    *   Constructor. Sets internal values to defaults
-    *
-    *   @param  array   $config     Driver config
-    */
-    public function __construct($config = NULL)
+     * Constructor. Sets internal values to defaults.
+     *
+     * @param  array   $config     Driver config
+     */
+    public function __construct(?array $config = NULL)
     {
         $this->all_langs = false;   // Assume only the user's language
         $this->setHTML();           // Default to HTML sitemap
@@ -63,7 +65,7 @@ class BaseDriver
      * @param   string  $key    Name of config item to retrieve
      * @return  mixed           Value of $config[$key], NULL if undefined
      */
-    public function __get($key)
+    public function __get(string $key)
     {
         if (array_key_exists($key, $this->config)) {
             return $this->config[$key];
@@ -74,55 +76,57 @@ class BaseDriver
 
 
     /**
-    *   Set the sitemap type to "HTML" for display online.
-    */
-    public function setHTML()
+     * Set the sitemap type to "HTML" for display online.
+     */
+    public function setHTML() : void
     {
-        global $_USER;
+        global $_USER, $_GROUPS;
 
         $this->smap_type = 'html';
         $this->uid = (int)$_USER['uid'];
+        $this->groups = $_GROUPS;
     }
 
 
     /**
-    *   Set the sitemap type to "gsmap", indicating an XML sitemap.
-    */
-    public function setXML()
+     * Set the sitemap type to "gsmap", indicating an XML sitemap.
+     */
+    public function setXML() : void
     {
         $this->smap_type = 'xml';
         $this->uid = 1;     // XML sitemaps are public, access as anonymous
+        $this->groups = SEC_getUserGroups(1);
     }
 
 
     /**
-    *   Check if the current sitemap is being created for online use.
-    *
-    *   @return boolean     True if this is an HTML sitemap
-    */
-    public function isHTML()
+     * Check if the current sitemap is being created for online use.
+     *
+     * @return  boolean     True if this is an HTML sitemap
+     */
+    public function isHTML() : bool
     {
         return $this->smap_type == 'html' ? true : false;
     }
 
 
     /**
-    *   Check if the current sitemap is being created as an XML file.
-    *
-    *   @return boolean     True if this is an XML sitemap
-    */
-    public function isXML()
+     * Check if the current sitemap is being created as an XML file.
+     *
+     * @return  boolean     True if this is an XML sitemap
+     */
+    public function isXML() : bool
     {
         return $this->smap_type == 'xml' ? true : false;
     }
 
 
     /**
-    *   If all_langs is false only items in the user's language are returned.
-    *   If true, all items are returned regardless of the item's language.
-    *
-    *   @param  boolean $status     True to get all languages, False to restrict
-    */
+     * If all_langs is false only items in the user's language are returned.
+     * If true, all items are returned regardless of the item's language.
+     *
+     * @param   boolean $status     True to get all languages, False to restrict
+     */
     public function setAllLangs($status = true)
     {
         $this->all_langs = $status === true ? true : false;
@@ -130,10 +134,10 @@ class BaseDriver
 
 
     /**
-    *   Get the name of this sitemap class
-    *
-    *   @return string  Short name for this sitemap type
-    */
+     * Get the name of this sitemap class.
+     *
+     * @return  string  Short name for this sitemap type
+     */
     public function getName()
     {
         return $this->name;
@@ -257,6 +261,31 @@ class BaseDriver
         return $driver;
     }
 
+
+    /**
+    * Common function used to build group access SQL.
+    * Field ID can include a table identifier, e.g. `tbl.fldname`.
+    * This is a replacement for `SEC_buildAccessSql()` to operate based on
+    * the class `groups` property instead of the current user's groups.
+    *
+    * @param    string  $clause    Optional parm 'WHERE' - default is 'AND'
+    * @param    string  $field     Optional field name, default is 'grp_access'
+    * @return   string      Formatted SQL string to be appended in calling script SQL statement
+    */
+    protected function buildAccessSql($clause = 'AND', $field = 'grp_access')
+    {
+        if (empty($this->groups)) {
+            $this->groups = SEC_getUserGroups($this->uid);
+        }
+        $groupsql = '';
+        if (count($this->groups) == 1) {
+            $groupsql .= " $clause $field = '" . current($this-groups) ."'";
+        } else {
+            $groupsql .= " $clause $field IN (" . implode(',',array_values($this->groups)) .")";
+        }
+
+        return $groupsql;
+    }
+
 }
 
-?>

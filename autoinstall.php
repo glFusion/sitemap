@@ -35,6 +35,8 @@ global $_DB_dbms, $_SMAP_CONF;
 
 require_once __DIR__ . '/sitemap.php';
 require_once __DIR__ . '/sql/mysql_install.php';
+use glFusion\Database\Database;
+use glFusion\Log\Log;
 
 // +--------------------------------------------------------------------------+
 // | Plugin installation options                                              |
@@ -145,7 +147,16 @@ function plugin_postinstall_sitemap()
     require_once __DIR__ . '/functions.inc';
 
     // Add the change counter
-    DB_query("INSERT INTO {$_TABLES['vars']} VALUES ('sitemap_changes', '0')",1);
+    $db = Database::getInstance();
+    try {
+        $db->conn->insert(
+            $_TABLES['vars'],
+            array('sitemap_changes' => 0),
+            array(Database::INTEGER)
+        );
+    } catch (\Throwable $e) {
+        Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+    }
 
     // Add the current plugins.
     // Configs haven't been loaded at this point, so fake them.
