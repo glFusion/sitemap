@@ -32,6 +32,7 @@
 // |                                                                          |
 // +--------------------------------------------------------------------------+
 namespace Sitemap\Drivers;
+use Sitemap\Models\Item;
 
 // this file can't be used on its own
 if (!defined ('GVERSION')) {
@@ -89,7 +90,7 @@ class dokuwiki extends BaseDriver
                 if (auth_aclcheck($item['id'],'',array()) < AUTH_READ) {
                     continue;
                 }
-                $entry = array();
+                $entry = new Item;
                 $entry['id'] = $item['id'];
                 $entry['pid'] = $pid;
 
@@ -113,7 +114,7 @@ class dokuwiki extends BaseDriver
                 }
                 $entry['date']      = false;
                 $entry['image_uri'] = false;
-                $entries[] = $entry;
+                $entries[] = $entry->toArray();
             }
         }
         return $entries;
@@ -182,7 +183,7 @@ class dokuwiki extends BaseDriver
                 continue;
             }
 
-            $entry = array();
+            $entry = new Item;
             $entry['id']    = $id;
             $entry['title'] = p_get_metadata($id, 'title');
             if ( $entry['title'] == '' ) $entry['title'] = $id;
@@ -205,9 +206,9 @@ class dokuwiki extends BaseDriver
                 default:
                     break;
             }
-            $entries[] = $entry;
+            $entries[] = $entry->toArray();
         }
         return $entries;
     }
 }
-?>
+

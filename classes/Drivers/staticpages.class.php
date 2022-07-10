@@ -1,23 +1,31 @@
 <?php
 /**
-*   Sitemap driver for the Static Pages.
-*
-*   @author     Mark R. Evans <mark@glfusion.org>
-*   @copyright  Copyright (c) 2008 Mark R. Evans <mark@glfusion.org>
-*   @copyright  Copyright (c) 2007-2008 Mystral-kk <geeklog@mystral-kk.net>
-*   @package    glfusion
-*   @version    2.0.0
-*   @license    http://opensource.org/licenses/gpl-2.0.php
-*               GNU Public License v2 or later
-*   @filesource
-*/
+ * Sitemap driver for the Static Pages.
+ *
+ * @author      Mark R. Evans <mark@glfusion.org>
+ * @copyright   Copyright (c) 2008 Mark R. Evans <mark@glfusion.org>
+ * @copyright   Copyright (c) 2007-2008 Mystral-kk <geeklog@mystral-kk.net>
+ * @package     glfusion
+ * @version     v2.1.0
+ * @license     http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
+ */
 namespace Sitemap\Drivers;
+use glFusion\Database\Database;
+use glFusion\Log\Log;
+use Sitemap\Models\Item;
 
 // this file can't be used on its own
 if (!defined ('GVERSION')) {
     die ('This file can not be used on its own.');
 }
 
+
+/**
+ * Sitemap driver for the Staticpages plugin.
+ * @package sitemap
+ */
 class staticpages extends BaseDriver
 {
     protected $name = 'staticpages';
@@ -45,13 +53,17 @@ class staticpages extends BaseDriver
 
         $retval = array();
 
-        $sql = "SELECT sp_id, sp_title, UNIX_TIMESTAMP(sp_date) AS day
-                FROM {$_TABLES['staticpage']}
-                WHERE sp_search = 1 AND sp_status = 1 AND sp_date <= NOW()";
+        $db = Database::getInstance();
+        $qb = $db->conn->createQueryBuilder();
+        $qb->select('sp_id', 'sp_title', 'UNIX_TIMESTAMP(sp_date) AS day')
+           ->from($_TABLES['staticpage'])
+           ->where('sp_search = 1')
+           ->andWhere('sp_status = 1')
+           ->andWhere('sp_date <= NOW()');
         if ($this->uid > 0) {
-            $sql .= COM_getPermSql('AND', $this->uid);
-            if (function_exists('COM_getLangSQL') && ($this->all_langs === false)) {
-                $sql .= COM_getLangSQL('sid', 'AND');
+            $qb->andWhere($db->getPermSQL('', $this->uid));
+            if ($this->all_langs === false) {
+                $qb->andWhere($db->getLangSQL('sid', ''));
             }
         }
         if (in_array($_SP_CONF['sort_by'], array('id', 'title', 'date'))) {
@@ -59,28 +71,26 @@ class staticpages extends BaseDriver
         } else {
             $crit = 'id';
         }
-        $sql .= " ORDER BY sp_" . $crit;
+        $qb->orderBy('sp_' . $crit);
 
-        $result = DB_query($sql);
-        if (DB_error()) {
-            COM_errorLog("sitemap_staticpages::getItems error: $sql");
-            return $retval;
+        try {
+            $stmt = $qb->execute();
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $stmt = false;
         }
-
-        while ($A = DB_fetchArray($result, false)) {
-            $retval[] = array(
-                'id'        => $A['sp_id'],
-                'title'     => $A['sp_title'],
-                'uri'       => COM_buildUrl(
-                    $_CONF['site_url'] . '/page.php?page=' . $A['sp_id']
-                ),
-                'date'      => $A['day'],
-                'imageurl'  => false,
-            );
+        if ($stmt) {
+            while ($A = $stmt->fetchAssociative()) {
+                $item = new Item;
+                $item['id'] = $A['sp_id'];
+                $item['title'] = $A['sp_title'];
+                $item['uri'] = COM_buildUrl($_CONF['site_url'] . '/page.php?page=' . $A['sp_id']);
+                $item['date'] = $A['day'];
+                $retval[] = $item->toArray();
+            }
         }
         return $retval;
     }
 
 }
 
-?>

@@ -32,12 +32,20 @@
 // |                                                                          |
 // +--------------------------------------------------------------------------+
 namespace Sitemap\Drivers;
+use glFusion\Database\Database;
+use glFusion\Log\Log;
+use Sitemap\Models\Item;
 
 // this file can't be used on its own
 if (!defined ('GVERSION')) {
     die ('This file can not be used on its own.');
 }
 
+
+/**
+ * Sitemap driver for the Polls plugin.
+ * @package sitemap
+ */
 class polls extends BaseDriver
 {
     protected $name = 'polls';
@@ -50,45 +58,47 @@ class polls extends BaseDriver
 
 
     /**
-    * Returns an array of (
-    *   'id'        => $id (string),
-    *   'title'     => $title (string),
-    *   'uri'       => $uri (string),
-    *   'date'      => $date (int: Unix timestamp),
-    *   'image_uri' => $image_uri (string)
-    * )
-    */
+     * Returns an array of (
+     *   'id'        => $id (string),
+     *   'title'     => $title (string),
+     *   'uri'       => $uri (string),
+     *   'date'      => $date (int: Unix timestamp),
+     *   'image_uri' => $image_uri (string)
+     * )
+     */
     public function getItems($category = 0)
     {
         global $_CONF, $_TABLES;
 
         $entries = array();
 
-        $sql = "SELECT pid, topic, UNIX_TIMESTAMP(date) AS day
-                FROM {$_TABLES['polltopics']} ";
+        $db = Database::getInstance();
+        $qb = $db->conn->createQueryBuilder();
+        $qb->select('pid', 'topic', 'UNIX_TIMESTAMP(date) AS day')
+           ->from($_TABLES['polltopics'])
+           ->orderBy('pid');
         if ($this->uid > 0) {
-            $sql .= COM_getPermSQL('WHERE', $this->uid);
-        }
-        $sql .= ' ORDER BY pid';
-        $result = DB_query($sql, 1);
-        if (DB_error()) {
-            COM_errorLog("sitemap_polls::getItems error: $sql");
-            return $entries;
+            $qb->where($db->getPermSQL('', $this->uid));
         }
 
-        while (($A = DB_fetchArray($result, false)) !== FALSE) {
-            $entries[] = array(
-                'id'        => $A['pid'],
-                'title'     => $A['topic'],
-                'uri'       => $_CONF['site_url'] . '/polls/index.php?pid='
-                                . urlencode($A['pid']),
-                'date'      => $A['day'],
-                'image_uri' => false,
-            );
+        try {
+            $stmt = $qb->execute();
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $stmt = false;
+        }
+        if ($stmt) {
+            while ($A = $stmt->fetchAssociative()) {
+                $item = new Item;
+                $item['id'] = $A['pid'];
+                $item['title'] = $A['topic'];
+                $item['uri'] = $_CONF['site_url'] . '/polls/index.php?pid=' . urlencode($A['pid']);
+                $item['date'] = $A['day'];
+                $entries[] = $item->toArray();
+            }
         }
         return $entries;
     }
 
 }
 
-?>

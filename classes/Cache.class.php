@@ -51,7 +51,7 @@ class Cache
             }
         }
         $key = self::makeKey($key);
-        return \glFusion\Cache::getInstance()
+        return \glFusion\Cache\Cache::getInstance()
             ->set($key, $data, $tags, $ttl);
     }
 
@@ -68,7 +68,7 @@ class Cache
             return false;     // glFusion version doesn't support caching
         }
         $key = self::makeKey($key);
-        return \glFusion\Cache::getInstance()->delete($key);
+        return \glFusion\Cache\Cache::getInstance()->delete($key);
     }
 
 
@@ -93,7 +93,7 @@ class Cache
                 $tags[] = $item_type;
             }
         }
-        return \glFusion\Cache::getInstance()->deleteItemsByTagsAll($tags);
+        return \glFusion\Cache\Cache::getInstance()->deleteItemsByTagsAll($tags);
     }
 
 
@@ -106,7 +106,7 @@ class Cache
     */
     public static function makeKey($key)
     {
-        $key = \glFusion\Cache::getInstance()->createKey(self::TAG . '_' . $key);
+        $key = \glFusion\Cache\Cache::getInstance()->createKey(self::TAG . '_' . $key);
         return $key;
     }
 
@@ -123,8 +123,8 @@ class Cache
             return NULL;     // glFusion version doesn't support caching
         }
         $key = self::makeKey($key);
-        if (\glFusion\Cache::getInstance()->has($key)) {
-            return \glFusion\Cache::getInstance()->get($key);
+        if (\glFusion\Cache\Cache::getInstance()->has($key)) {
+            return \glFusion\Cache\Cache::getInstance()->get($key);
         } else {
             return NULL;
         }

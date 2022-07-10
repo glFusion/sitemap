@@ -2,9 +2,9 @@
     <id>sitemap</id>
     <name>SiteMap</name>
     <description>Generates both an online sitemap and a Google compatible sitemap.xml</description>
-    <version>2.0.5</version>
-    <glfusionversion>1.7.0</glfusionversion>
-    <phpversion>5.6.0</phpversion>
+    <version>2.0.5.1</version>
+    <glfusionversion>2.0.0</glfusionversion>
+    <phpversion>7.4.0</phpversion>
     <url>https://www.glfusion.org</url>
     <maintainer>Mark R. Evans</maintainer>
 </plugin>

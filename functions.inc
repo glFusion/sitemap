@@ -78,6 +78,10 @@ spl_autoload_register(function ($class)
         // or provided by another, so get the first path found.
         $class = str_replace('Sitemap\\Drivers\\', '', $class);
         $path = Sitemap\Config::getDriverPath($class, false);   // no legacy
+    } elseif (strpos($class, 'Sitemap\\Models\\') === 0) {
+        // Loading an internal model class.
+        $class = str_replace('Sitemap\\Models\\', '', $class);
+        $path = __DIR__ . '/classes/Models/' . $class . '.class.php';
     } elseif (strpos($class, 'Sitemap\\') === 0) {
         // Loading an internal class. Eventually all classes should be
         // namespaced.
@@ -100,6 +104,8 @@ spl_autoload_register(function ($class)
         include $path;
     }
 });
+use glFusion\Database\Database;
+use glFusion\Log\Log;
 
 
 // +---------------------------------------------------------------------------+
@@ -457,7 +463,8 @@ function SMAP_canView()
 
         if ($retval === true) {
             // If the guest has access, check if there are any items to show
-            $active = DB_count($_TABLES['smap_maps'],'html_enabled',1);
+            $db = Database::getInstance();
+            $active = $db->getCount($_TABLES['smap_maps'], 'html_enabled', 1, Database::INTEGER);
             if ($active < 1) {
                 $retval = false;
             }
@@ -539,10 +546,12 @@ function SITEMAP_updateCounter($cnt = 1)
 {
     global $_TABLES;
 
+    $db = Database::getInstance();
     $change = $cnt == 0 ? '0' : 'value + 1';
-    DB_query("UPDATE {$_TABLES['vars']}
-            SET value = $change
-            WHERE name = 'sitemap_changes'");
+    $db->conn->executeStatement(
+        "UPDATE {$_TABLES['vars']}
+        SET value = $change
+        WHERE name = 'sitemap_changes'"
+    );
 }
 
-?>

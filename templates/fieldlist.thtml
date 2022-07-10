@@ -1,0 +1,9 @@
+{# begin {templatelocation} #}
+<!-- BEGIN field-blank -->
+    <i class="uk-icon uk-icon-justify"
+	<!-- BEGIN attr -->
+        {name}="{value}"
+    <!-- END attr -->
+    ></i></a>
+<!-- END field-blank -->
+{# end {templatelocation} #}
