@@ -34,6 +34,7 @@
 
 require_once '../../../lib-common.php';
 require_once '../../auth.inc.php';
+use Sitemap\FieldList;
 
 if (!in_array('sitemap', $_PLUGINS)) {
     COM_404();
@@ -112,21 +113,16 @@ function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
     case 'action':
         // Change the order
         if ($A['orderby'] > 10) {
-            $retval .= COM_createLink(
-                '<img src="' . $_CONF['layout_url'] .
-                '/images/up.png" height="16" width="16" border="0" />',
-                $_CONF['site_admin_url'] . '/plugins/sitemap/index.php?move=up&id=' . $A['pi_name']
-                );
+            $retval .= FieldList::up(array(
+                'url' => $_CONF['site_admin_url'] . '/plugins/sitemap/index.php?move=up&id=' . $A['pi_name'],
+            ) );
         } else {
-            $retval .= '<img src="' . $_CONF['layout_url'] .
-                '/images/blank.gif" height="16" width="16" border="0" />';
+            $retval .= FieldList::blank(array());
         }
         if ($A['orderby'] < $extra['map_count'] * 10) {
-            $retval .= COM_createLink(
-                '<img src="' . $_CONF['layout_url'] .
-                    '/images/down.png" height="16" width="16" border="0" />',
-                $_CONF['site_admin_url'] . '/plugins/sitemap/index.php?move=down&id=' . $A['pi_name']
-                );
+            $retval .= FieldList::down(array(
+                'url' => $_CONF['site_admin_url'] . '/plugins/sitemap/index.php?move=down&id=' . $A['pi_name'],
+            ) );
         }
         break;
 
@@ -134,21 +130,31 @@ function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
     case 'html_enabled':
         list($fldid, $trash) = explode('_', $fieldname);
         $chk = $fieldvalue == 1 ? 'checked="checked"' : '';
-        $retval = "<input id=\"{$fldid}_ena_{$pi_name}\" type=\"checkbox\" name=\"{$fieldname}[{$A['pi_name']}]\" value=\"1\" $chk onclick='SMAP_toggleEnabled(this, \"{$A['pi_name']}\", \"{$fldid}\");' />" . LB;
+        $retval = FieldList::checkbox(array(
+            'name' => $fieldname . '[' . $pi_name . ']',
+            'id' => $fldid . '_ena_' . $pi_name,
+            'value' => 1,
+            'checked' => $fieldvalue == 1,
+            'onclick' => "SMAP_toggleEnabled(this, '{$pi_name}', '{$fldid}');",
+        ) );
          break;
 
     case 'freq':
-        $retval = "<select id=\"freqsel_{$pi_name}\" name=\"freq[{$A['pi_name']}]\"
-            onchange='SMAP_updateFreq(\"{$pi_name}\", this.value);'>" . LB;
-        $retval .= SITEMAP_getFreqOptions($fieldvalue);
-        $retval .= '</select>' . LB;
+        $retval = FieldList::select(array(
+            'id' => "freqsel_{$pi_name}",
+            'name' => "freq[{$A['pi_name']}]",
+            'onchange' => "SMAP_updateFreq('{$pi_name}', this.value);",
+            'option_list' => SITEMAP_getFreqOptions($fieldvalue),
+        ) );
         break;
 
     case 'priority':
-        $retval = "<select id=\"priosel_{$pi_name}\" name=\"priority[{$A['pi_name']}]\"
-            onchange='SMAP_updatePriority(\"{$pi_name}\", this.value);'>" . LB;
-        $retval .= SITEMAP_getPriorityOptions($fieldvalue);
-        $retval .= '</select>' . LB;
+        $retval = FieldList::select(array(
+            'id' => "priosel_{$pi_name}",
+            'name' => "priority[{$pi_name}]",
+            'onchange' => "SMAP_updatePriority('{$pi_name}', this.value);",
+            'option_list' => SITEMAP_getPriorityOptions($fieldvalue),
+        ) );
         break;
 
     case 'pi_name':
@@ -247,7 +253,7 @@ USES_lib_admin();
 $action = '';
 
 $expected = array(
-    'move', 'updatenow',
+    'move', 'updatenow', 'clearcache',
 );
 foreach($expected as $provided) {
     if (isset($_POST[$provided])) {
@@ -273,12 +279,21 @@ case 'updatenow':
         SITEMAP_createGoogleSitemap();
     }
     break;
+case 'clearcache':
+    Sitemap\Cache::clear();
+    break;
 }
 
 $header = '';
-$menu_arr = array (
-    array('url' => $_CONF['site_admin_url'].'/index.php',
-          'text' => $LANG_ADMIN['admin_home'])
+$menu_arr = array(
+    array(
+        'url' => $_CONF['site_admin_url'],
+        'text' => $LANG_ADMIN['admin_home'],
+    ),
+    array(
+        'url' => $_CONF['site_admin_url'] . '/plugins/sitemap/index.php?clearcache=x',
+        'text' => $LANG_SMAP['clear_cache'],
+    ),
 );
 
 $header .= COM_startBlock($LANG_SMAP['admin'], '',
@@ -294,4 +309,3 @@ $display .= COM_siteFooter();
 echo $display;
 exit;
 
-?>
