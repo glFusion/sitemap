@@ -35,6 +35,9 @@
 require_once '../../../lib-common.php';
 require_once '../../auth.inc.php';
 use Sitemap\FieldList;
+use Sitemap\Sitemap;
+use Sitemap\Config;
+use Sitemap\Plugin;
 
 if (!in_array('sitemap', $_PLUGINS)) {
     COM_404();
@@ -49,60 +52,15 @@ if (!SEC_hasRights('sitemap.admin')) {
     exit;
 }
 
-//=====================================
-//  Functions
-//=====================================
 
 /**
-*   Returns options list for a frequency selection
-*
-*   @param  string  $selected   Optional value to mark selected
-*   @return string      Options to be placed between <select> tags
-*/
-function SITEMAP_getFreqOptions($selected='')
-{
-    global $LANG_SMAP;
-
-    $retval = '';
-
-    foreach ($LANG_SMAP['freqs'] as $key=>$text) {
-        $sel = $key == $selected ? 'selected="selected"' : '';
-        $retval .= '<option value="' . $key . '" ' . $sel . '>' .
-                $text . '</option>' . LB;
-    }
-    return $retval;
-}
-
-
-/**
-*   Returns options list for a priority selection
-*
-*   @param  string  $selected   Optional value to mark selected
-*   @return string      Options to be placed between <select> tags
-*/
-function SITEMAP_getPriorityOptions($selected='')
-{
-    global $_SMAP_CONF;
-
-    $retval = '';
-
-    foreach ($_SMAP_CONF['priorities'] as $value) {
-        $sel = $value == $selected ? 'selected="selected"' : '';
-        $retval .= '<option value="' . $value. '" ' . $sel . '>' .
-                $value . '</option>' . LB;
-    }
-    return $retval;
-}
-
-
-/**
-*   Callback function to display each field.
-*
-*   @param  string  $fieldname  Name of field from header array
-*   @param  mixed   $fieldvalue Field's value
-*   @param  array   $A          Array of all fieldname=>value pairs
-*   @param  array   $icon_arr   Array of icons (not used)
-*/
+ * Callback function to display each field.
+ *
+ * @param   string  $fieldname  Name of field from header array
+ * @param   mixed   $fieldvalue Field's value
+ * @param   array   $A          Array of all fieldname=>value pairs
+ * @param   array   $icon_arr   Array of icons (not used)
+ */
 function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
 {
     global $_CONF, $LANG_ACCESS, $LANG_SMAP;
@@ -144,7 +102,7 @@ function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
             'id' => "freqsel_{$pi_name}",
             'name' => "freq[{$A['pi_name']}]",
             'onchange' => "SMAP_updateFreq('{$pi_name}', this.value);",
-            'option_list' => SITEMAP_getFreqOptions($fieldvalue),
+            'option_list' => Sitemap::getFreqOptions($fieldvalue),
         ) );
         break;
 
@@ -153,7 +111,7 @@ function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
             'id' => "priosel_{$pi_name}",
             'name' => "priority[{$pi_name}]",
             'onchange' => "SMAP_updatePriority('{$pi_name}', this.value);",
-            'option_list' => SITEMAP_getPriorityOptions($fieldvalue),
+            'option_list' => Sitemap::getPriorityOptions($fieldvalue),
         ) );
         break;
 
@@ -173,15 +131,15 @@ function SMAP_adminField($fieldname, $fieldvalue, $A, $icon_arr, $extra)
 
 
 /**
-*   Uses lib-admin to list the form results.
-*
-*   @param  string  $frm_id         ID of form
-*   @param  string  $instance_id    Optional form instance ID
-*   @return string          HTML for the list
-*/
+ * Uses lib-admin to list the form results.
+ *
+ * @param   string  $frm_id         ID of form
+ * @param   string  $instance_id    Optional form instance ID
+ * @return  string          HTML for the list
+ */
 function SMAP_adminList()
 {
-    global $_CONF, $_TABLES, $LANG_ADMIN, $_SMAP_CONF, $LANG_SMAP;
+    global $_CONF, $_TABLES, $LANG_ADMIN, $LANG_SMAP;
 
     $retval = '';
 
@@ -213,10 +171,10 @@ function SMAP_adminList()
                 'sort' => false,
         ),
     );
-    $configs = Sitemap\Config::getAll();
+    $configs = Plugin::getAll();
     foreach ($configs as $pi_name=>$config) {
         // Hack to indicate any plugins that are installed but disabled.
-        $configs[$pi_name]['pi_status'] = Sitemap\Config::piEnabled($pi_name);
+        $configs[$pi_name]['pi_status'] = Plugin::piEnabled($pi_name);
     }
     $defsort_arr = array('field' => 'orderby', 'direction' => 'asc');
     $extra = array(
@@ -229,15 +187,15 @@ function SMAP_adminList()
 
     $T = new Template($_CONF['path'] . '/plugins/sitemap/templates');
     $T->set_file('update', 'updatemap.thtml');
-    $sitemaps = explode(';', $_SMAP_CONF['xml_filenames']);
-    $last_updated = @filemtime($_CONF['path_html'] . trim($sitemaps[0]));
+    $sitemaps = explode(';', Config::get('xml_filenames'));
+    $last_updated = @filemtime($_CONF['path_rss'] . trim($sitemaps[0]));
     $D = new Date($last_updated, $_CONF['timezone']);
     if ($last_updated === false) {
         $last_updated = $LANG_SMAP['unknown'];
     } else {
         $last_updated = $D->format($_CONF['date'], true);
     }
-    $T->set_var('last_updated', SITEMAP_escape($last_updated));
+    $T->set_var('last_updated', Sitemap::escape($last_updated));
     $T->parse('output', 'update');
     $retval .= $T->finish($T->get_var('output'));
     return $retval;
@@ -269,14 +227,14 @@ foreach($expected as $provided) {
 
 switch ($action) {
 case 'move':
-    Sitemap\Config::Move($_GET['id'], $actionval);
+    Config::Move($_GET['id'], $actionval);
     break;
 case 'updatenow':
     $st = ini_get('short_open_tag');
     if( $st ) {
         COM_setMsg($LANG_SMAP['xml_sitemap_error'],'error');
     } else {
-        SITEMAP_createGoogleSitemap();
+        Sitemap::createGoogle();
     }
     break;
 case 'clearcache':
@@ -296,9 +254,12 @@ $menu_arr = array(
     ),
 );
 
-$header .= COM_startBlock($LANG_SMAP['admin'], '',
-                          COM_getBlockTemplate('_admin_block', 'header'));
-$header .= ADMIN_createMenu($menu_arr, $LANG_SMAP['admin_help'], $_CONF['site_url'] . '/sitemap/images/sitemap.png');
+$header .= COM_startBlock(
+    $LANG_SMAP['admin'] . ' v' . Config::get('pi_version'),
+    '',
+    COM_getBlockTemplate('_admin_block', 'header')
+);
+$header .= ADMIN_createMenu($menu_arr, $LANG_SMAP['admin_help']);
 $header .= COM_endBlock(COM_getBlockTemplate('_admin_block', 'footer'));
 
 // Displays
