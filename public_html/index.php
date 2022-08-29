@@ -34,25 +34,22 @@
 
 require_once '../lib-common.php';
 
-if (!in_array('sitemap', $_PLUGINS) || !SMAP_canView()) {
+if (!in_array('sitemap', $_PLUGINS) || !Sitemap\Sitemap::canView()) {
     COM_404();
     exit;
 }
-
-//===========================
-//  Functions
-//===========================
+use Sitemap\Config;
 
 /**
 * Returns a selector to choose data source
 */
 function SITEMAP_getSelectForm($selected = 'all')
 {
-    global $_CONF, $_SMAP_CONF, $LANG_SMAP;
+    global $_CONF, $LANG_SMAP;
 
     $this_script = $_CONF['site_url'] . '/sitemap/index.php';
-    $drivers = Sitemap\Config::getDrivers();
-    $LT = new Template($_CONF['path'] . '/plugins/' . $_SMAP_CONF['pi_name'] . '/templates');
+    $drivers = Sitemap\Plugin::getDrivers();
+    $LT = new Template($_CONF['path'] . '/plugins/' . Config::PI_NAME. '/templates');
     $LT->set_file('selector', 'selector.thtml');
     $LT->set_var(array(
         'action_url'    => $this_script,
@@ -85,15 +82,16 @@ function SITEMAP_getSelectForm($selected = 'all')
 */
 function SITEMAP_buildItems($driver, $pid)
 {
-    global $_CONF, $_SMAP_CONF, $T, $_USER;
+    global $_CONF, $T, $_USER;
 
     $html = '';
 
     $dt = new \Date('now',$_USER['tzid']);
 
     $T->clear_var('items');
-    if ( isset($_SMAP_CONF['sp_except']) ) {
-        $sp_except = explode(' ', $_SMAP_CONF['sp_except']);
+    $sp_except = Config::get('sp_except');
+    if (is_string($sp_except)) {
+        $sp_except = explode(' ', $sp_except);
     } else {
         $sp_except = array();
     }
@@ -125,15 +123,15 @@ function SITEMAP_buildItems($driver, $pid)
 
 
 /**
-*   Builds a category and items belonging to it
-*
-*   @param $driver  reference to driver object
-*   @param $cat     array of category data
-*   @return         string HTML
-*
-*   @destroy        $T->var( 'child_categories', 'category', 'num_items' )
-*/
-function SITEMAP_buildCategory($driver, $cat)
+ * Builds a category and items belonging to it.
+ *
+ * @param   object  $driver Reference to driver object
+ * @param   array   $cat    Array of category data
+ * @return  array       Array of (num_items, HTML string)
+ *
+ * @destroy        $T->var( 'child_categories', 'category', 'num_items' )
+ */
+function SITEMAP_buildCategory(object $driver, array $cat) : array
 {
     global $T, $LANG_SMAP;
 
@@ -147,6 +145,7 @@ function SITEMAP_buildCategory($driver, $cat)
         $child_categories = $driver->getChildCategories($cat['id']);
         Sitemap\Cache::set($key, $child_categories, $driver->getName());
     }
+
     if (count($child_categories) > 0) {
         $child_cats = '';
 
@@ -216,7 +215,7 @@ $T->set_file(array(
 // Used below to write the sitemap and in the selection creation above.
 // Ensures that only valid driver classfiles are used.
 
-$drivers = Sitemap\Config::getDrivers();
+$drivers = Sitemap\Plugin::getDrivers();
 foreach ($drivers as $driver) {
     $num_items = 0;
 
@@ -263,4 +262,3 @@ $display = COM_siteHeader()
             . COM_siteFooter();
 echo $display;
 
-?>
