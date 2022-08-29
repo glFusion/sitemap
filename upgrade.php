@@ -1,17 +1,18 @@
 <?php
 /**
-*   Upgrade routines for the Sitemap plugin
-*
-*   @author     Lee Garner <lee@leegarner.com>
-*   @copyright  Copyright (c) 2017-2022 Lee Garner <lee@leegarner.com>
-*   @package    sitemap
-*   @version    2.1.0
-*   @license    http://opensource.org/licenses/gpl-2.0.php
-*               GNU Public License v2 or later
-*   @filesource
-*/
+ * Upgrade routines for the Sitemap plugin.
+ *
+ * @author      Lee Garner <lee@leegarner.com>
+ * @copyright   Copyright (c) 2017-2022 Lee Garner <lee@leegarner.com>
+ * @package     sitemap
+ * @version     v2.1.0
+ * @license     http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
+ */
 use glFusion\Database\Database;
 use glFusion\Log\Log;
+use Sitemap\Config;
 
 if (!defined('GVERSION')) {
     die('This file can not be used on its own.');
@@ -19,11 +20,10 @@ if (!defined('GVERSION')) {
 
 function sitemap_upgrade() : bool
 {
-    global $_TABLES, $_CONF, $_PLUGIN_INFO, $_SMAP_CONF, $_DB_dbms;
+    global $_TABLES, $_CONF, $_PLUGIN_INFO, $_DB_dbms;
 
-    $pi_name = $_SMAP_CONF['pi_name'];
-    if (isset($_PLUGIN_INFO[$pi_name])) {
-        $current_ver = $_PLUGIN_INFO[$pi_name]['pi_version'];
+    if (isset($_PLUGIN_INFO[Config::PI_NAME])) {
+        $current_ver = $_PLUGIN_INFO[Config::PI_NAME]['pi_version'];
     } else {
         return false;
     }
@@ -85,13 +85,11 @@ function sitemap_upgrade() : bool
             plugin_initconfig_sitemap();
 
             // reload config
-            $configT = config::get_instance();
-            $_SMAP_CONF = $configT->get_config('sitemap');
+            Config::getInstance();
             include __DIR__ . '/sitemap.php';
 
             // do database updates
             // $_SQL is set in mysql_install.php
-
             $sql = $_SQL['smap_maps'];
             if ($use_innodb) {
                 $sql = str_replace('MyISAM', 'InnoDB', $sql);
@@ -207,8 +205,9 @@ function sitemap_upgrade() : bool
 
 
 /**
-* Loads vars from DB into $_SMAP_CONF[]
-*/
+ * Loads vars from DB into $_SMAP_CONF[]
+ * @deprecate
+ */
 function _SITEMAP_loadConfig()
 {
     global $_TABLES;
@@ -249,7 +248,7 @@ function _SITEMAP_loadConfig()
  */
 function _SITEMAP_remOldFiles()
 {
-    global $_CONF, $_SMAP_CONF;
+    global $_CONF;
 
     $paths = array(
         // private/plugins/sitemap
@@ -268,10 +267,10 @@ function _SITEMAP_remOldFiles()
             'sitemap/staticpages.class.php',
         ),
         // public_html/sitemap
-        $_CONF['path_html'] . $_SMAP_CONF['pi_name'] => array(
+        $_CONF['path_html'] . Config::PI_NAME => array(
         ),
         // admin/plugins/sitemap
-        $_CONF['path_html'] . 'admin/plugins/' . $_SMAP_CONF['pi_name'] => array(
+        $_CONF['path_html'] . 'admin/plugins/' . Config::PI_NAME => array(
         ),
     );
 
@@ -307,7 +306,7 @@ function SMAP_update_config()
  */
 function SMAP_do_set_version($ver)
 {
-    global $_TABLES, $_SMAP_CONF, $_PLUGIN_INFO;
+    global $_TABLES, $_PLUGIN_INFO;
 
     $db = Database::getInstance();
     try {
@@ -315,15 +314,15 @@ function SMAP_do_set_version($ver)
             $_TABLES['plugins'],
             array(
                 'pi_version' => $ver,
-                'pi_gl_version' => $_SMAP_CONF['gl_version'],
-                'pi_homepage' => $_SMAP_CONF['pi_url'],
+                'pi_gl_version' => Config::get('gl_version'),
+                'pi_homepage' => Config::get('pi_url'),
             ),
-            array('pi_name' => $_SMAP_CONF['pi_name']),
+            array('pi_name' => Config::PI_NAME),
             array(Database::STRING, Database::STRING, Database::STRING, Database::STRING)
         );
-        Log::write('system', Log::DEBUG, "{$_SMAP_CONF['pi_display_name']} version set to $ver");
-        $_SMAP_CONF['pi_version'] = $ver;
-        $_PLUGIN_INFO[$_SMAP_CONF['pi_name']]['pi_version'] = $ver;
+        Log::write('system', Log::DEBUG, Config::get('pi_display_name') . " version set to $ver");
+        Config::set('pi_version', $ver);
+        $_PLUGIN_INFO[Config::PI_NAME]['pi_version'] = $ver;
         return true;
      } catch (\Throwable $e) {
          Log::write('system', Log::ERROR, __FUNCTION__ . ': ' . $e->getMessage());

@@ -31,12 +31,13 @@ if (!defined ('GVERSION')) {
     die ('This file can not be used on its own.');
 }
 
-global $_DB_dbms, $_SMAP_CONF;
+global $_DB_dbms;
 
 require_once __DIR__ . '/sitemap.php';
 require_once __DIR__ . '/sql/mysql_install.php';
 use glFusion\Database\Database;
 use glFusion\Log\Log;
+use Sitemap\Config;
 
 // +--------------------------------------------------------------------------+
 // | Plugin installation options                                              |
@@ -48,11 +49,11 @@ $INSTALL_plugin['sitemap'] = array(
         'mode' => 'install',
     ),
     'plugin'        => array(  'type' => 'plugin',
-        'name'      => $_SMAP_CONF['pi_name'],
-        'ver'       => $_SMAP_CONF['pi_version'],
-        'gl_ver'    => $_SMAP_CONF['gl_version'],
-        'url'       => $_SMAP_CONF['pi_url'],
-        'display'   => $_SMAP_CONF['pi_name'],
+        'name'      => Config::PI_NAME,
+        'ver'       => Config::get('pi_version'),
+        'gl_ver'    => Config::get('gl_version'),
+        'url'       => Config::get('pi_url'),
+        'display'   => Config::get('pi_display_name'),
     ),
     array(  'type'  => 'table',
             'table' => $_TABLES['smap_maps'],
@@ -89,15 +90,14 @@ $INSTALL_plugin['sitemap'] = array(
 */
 function plugin_install_sitemap()
 {
-    global $INSTALL_plugin, $_SMAP_CONF;
+    global $INSTALL_plugin;
 
-    $pi_name            = $_SMAP_CONF['pi_name'];
-    $pi_display_name    = $_SMAP_CONF['pi_display_name'];
-    $pi_version         = $_SMAP_CONF['pi_version'];
-
-    COM_errorLog("Attempting to install the $pi_display_name plugin", 1);
-
-    $ret = INSTALLER_install($INSTALL_plugin[$pi_name]);
+    Log::write(
+        'system',
+        Log::INFO,
+        "Attempting to install the " . Config::get('pi_display_name') . " plugin"
+    );
+    $ret = INSTALLER_install($INSTALL_plugin[Config::PI_NAME]);
     return $ret == 0 ? true : false;
 }
 
@@ -143,7 +143,7 @@ function plugin_autouninstall_sitemap()
 */
 function plugin_postinstall_sitemap()
 {
-    global $_CONF, $_TABLES, $_SMAP_CONF;
+    global $_CONF, $_TABLES;
     require_once __DIR__ . '/functions.inc';
 
     // Add the change counter
@@ -160,7 +160,7 @@ function plugin_postinstall_sitemap()
 
     // Add the current plugins.
     // Configs haven't been loaded at this point, so fake them.
-    $_SMAP_CONF['auto_add_plugins'] = 1;
+    Config::set('auto_add_plugins', 1);
     Sitemap\Config::updateConfigs();
 }
 
@@ -172,7 +172,7 @@ function plugin_postinstall_sitemap()
 */
 function plugin_load_configuration_sitemap()
 {
-    global $_CONF, $_SMAP_CONF, $_TABLES;
+    global $_CONF, $_TABLES;
 
     require_once __DIR__ . '/install_defaults.php';
     return plugin_initconfig_sitemap();
