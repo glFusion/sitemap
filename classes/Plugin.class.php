@@ -20,10 +20,11 @@ use glFusion\Log\Log;
  */
 class Plugin
 {
+    public const TAG = 'smap_configs';
     private $isNew;
     private $properties = array();
     public static $local = array('article');
-    const TAG = 'smap_configs';      // tag applied for caching
+    private static $_TAGS = array(self::TAG, 'plugin'); // tag applied for caching
 
     /**
     *   Constructor.  Sets the local properties using the array $item.
@@ -462,8 +463,7 @@ class Plugin
                 );
                 // Update the in-memory config and return the new value
                 $this->freq = $newfreq;
-                Cache::clear($this->name);
-                Cache::clear(self::TAG);
+                Cache::clear(array(self::TAG, $this->name));
             } catch (\Throwable $e) {
                 Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
             }
@@ -656,7 +656,7 @@ class Plugin
                         //$configs[$A['pi_name']]['driver_path'] = self::getDriverPath($A['pi_name']);
                     }
                 }
-                Cache::set($cache_key, $configs, array(self::TAG,'plugin'));
+                Cache::set($cache_key, $configs, self::TAG);
             }
         }
         if ($do_update) {
@@ -721,10 +721,4 @@ class Plugin
     }
  
 }
-
-// Set the static variable to the names of non-plugin sitemap drivers
-// included with the Sitemap plugin. These cannot be deleted.
-// This could be a single string set above inside the object, but using an
-// array allows other types to be added easily if needed.
-//Config::$local = array('article');
 

@@ -97,7 +97,7 @@ class BaseDriver
     {
         $this->smap_type = 'xml';
         $this->uid = 1;     // XML sitemaps are public, access as anonymous
-        $this->groups = SEC_getUserGroups(1);
+        $this->groups = array_values(SEC_getUserGroups(1));
     }
 
 
