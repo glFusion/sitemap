@@ -15,6 +15,8 @@
  * @filesource
  */
 namespace Sitemap\Drivers;
+use Sitemap\Plugin;
+
 
 /**
  * Class for sitemap items.
@@ -237,15 +239,14 @@ class BaseDriver
      * @param   array   $pi_config  Driver configuration
      * @return  object              Sitemap driver object, NULL if not found
      */
-    public static function getDriver($pi_name, $pi_config=NULL)
+    public static function getDriver(string $pi_name, ?array $pi_config=NULL) : ?object
     {
         $driver = NULL;
 
-        $path = \Sitemap\Config::getDriverPath($pi_name);
+        $path = Plugin::getDriverPath($pi_name);
         if ($path) {
             include_once $path;
         }
-//        COM_errorLog($path);
 
         // First try to find a namespaced driver
         $cls = '\\Sitemap\\Drivers\\' . $pi_name;

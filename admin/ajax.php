@@ -1,20 +1,21 @@
 <?php
 /**
-*   Common AJAX functions
-*
-*   @author     Lee Garner <lee@leegarner.com>
-*   @copyright  Copyright (c) 2017 Lee Garner <lee@leegarner.com>
-*   @package    sitemap
-*   @version    2.0.0
-*   @license    http://opensource.org/licenses/gpl-2.0.php 
-*               GNU Public License v2 or later
-*   @filesource
-*/
+ * Common AJAX functions.
+ *
+ * @author      Lee Garner <lee@leegarner.com>
+ * @copyright   Copyright (c) 20172022 Lee Garner <lee@leegarner.com>
+ * @package     sitemap
+ * @version     v3.0.0
+ * @license     http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
+ */
 
 /**
 *  Include required glFusion common functions
 */
 require_once '../../../lib-common.php';
+use Sitemap\Plugin;
 
 if (!in_array('sitemap', $_PLUGINS) ||
     !SEC_hasRights('sitemap.admin')) {
@@ -27,7 +28,7 @@ case 'toggleEnabled':
     switch ($_POST['type']) {
     case 'html':
     case 'xml':
-        $newval = Sitemap\Config::toggleEnabled($_POST['id'], $_POST['type'], $_POST['oldval']);
+        $newval = Plugin::toggleEnabled($_POST['id'], $_POST['type'], $_POST['oldval']);
         $newval_txt = $newval == 1 ? $LANG_SMAP['enabled'] : $LANG_SMAP['disabled'];
         break;
 
@@ -44,7 +45,7 @@ case 'toggleEnabled':
     break;
 
 case 'updatefreq':
-    $M = new Sitemap\Config($_POST['id']);
+    $M = new Plugin($_POST['id']);
     $newfreq = $M->updateFreq($_POST['newfreq']);
     $result = array(
         'pi_name'   => $_POST['id'],
@@ -55,7 +56,7 @@ case 'updatefreq':
     break;
 
 case 'updatepriority':
-    $M = new Sitemap\Config($_POST['id']);
+    $M = new Plugin($_POST['id']);
     $newpriority = $M->updatePriority($_POST['newpriority']);
     $result = array(
         'pi_name'   => $_POST['id'],
