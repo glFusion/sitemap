@@ -208,10 +208,10 @@ function plugin_chkVersion_sitemap()
 *
 *   @return   boolean true (= success)
 */
-function plugin_upgrade_sitemap()
+function plugin_upgrade_sitemap(bool $dvlp=false) : bool
 {
     require_once __DIR__ . '/upgrade.php';
-    return sitemap_upgrade();
+    return sitemap_upgrade($dvlp);
 }
 
 

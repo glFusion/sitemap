@@ -18,7 +18,7 @@ if (!defined('GVERSION')) {
     die('This file can not be used on its own.');
 }
 
-function sitemap_upgrade() : bool
+function sitemap_upgrade(bool $dvlp=false) : bool
 {
     global $_TABLES, $_CONF, $_PLUGIN_INFO, $_DB_dbms;
 
