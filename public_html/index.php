@@ -99,7 +99,7 @@ function SITEMAP_buildItems($driver, $pid)
     $items = Sitemap\Cache::get($key);
     if ($items === NULL) {
         $items = $driver->getItems($pid);
-        Sitemap\Cache::set($key, $items, $driver->getName());
+        Sitemap\Cache::set($key, $items, array($driver->getName(), 'plugin'));
     }
     $num_items = count($items);
     if ($num_items > 0 && is_array($items)) {
@@ -143,7 +143,7 @@ function SITEMAP_buildCategory(object $driver, array $cat) : array
     $child_categories = Sitemap\Cache::get($key);
     if ($child_categories === NULL) {
         $child_categories = $driver->getChildCategories($cat['id']);
-        Sitemap\Cache::set($key, $child_categories, $driver->getName());
+        Sitemap\Cache::set($key, $child_categories, array($driver->getName(), 'plugin'));
     }
 
     if (count($child_categories) > 0) {
