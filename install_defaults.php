@@ -58,17 +58,6 @@ $smapConfigData = array(
         'group' => 'sitemap',
     ),
     array(
-        'name' => 'xml_uid',
-        'default_value' => 1,
-        'type' => 'select',
-        'subgroup' => 0,
-        'fieldset' => 0,
-        'selection_array' => 0,
-        'sort' => 20,
-        'set' => true,
-        'group' => 'sitemap',
-    ),
-    array(
         'name' => 'view_access',
         'default_value' => 2,
         'type' => 'select',
