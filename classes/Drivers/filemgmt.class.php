@@ -78,13 +78,13 @@ class filemgmt extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = (int)$A['cid'];
-                $item['pid'] = (int)$A['pid'];
-                $item['title'] = $A['title'];
-                $item['uri'] = $_CONF['site_url'] . '/filemgmt/viewcat.php?cid=' . $A['cid'];
-                $item['image_uri'] = $A['imgurl'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['cid'])
+                     ->withParentId($A['pid'])
+                     ->withTitle($A['title'])
+                     ->withUrl($_CONF['site_url'] . '/filemgmt/viewcat.php?cid=' . $A['cid'])
+                     ->withImageUrl($A['imgurl']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;
@@ -129,12 +129,12 @@ class filemgmt extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['lid'];
-                $item['title'] = $A['title'];
-                $item['uri'] = $_CONF['site_url'] . '/filemgmt/index.php?id=' . $A['lid'];
-                $item['date'] = $A['date'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['lid'])
+                     ->withTitle($A['title'])
+                     ->withUrl($_CONF['site_url'] . '/filemgmt/index.php?id=' . $A['lid'])
+                     ->withDate($A['date']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;

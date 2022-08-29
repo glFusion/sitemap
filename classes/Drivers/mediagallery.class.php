@@ -124,13 +124,13 @@ class mediagallery extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['album_id'];
-                $item['pid'] = $A['album_parent'];
-                $item['title'] = $A['album_title'];
-                $item['uri'] = $_MG_CONF['site_url'] . '/album.php?aid=' . $A['album_id'];
-                $item['date'] = $A['last_update'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['album_id'])
+                     ->withParentId($A['album_parent'])
+                     ->withTitle($A['album_title'])
+                     ->withUrl($_MG_CONF['site_url'] . '/album.php?aid=' . $A['album_id'])
+                     ->withDate($A['last_update']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;
@@ -181,12 +181,12 @@ class mediagallery extends BaseDriver
                 if (empty($A['media_title'])) {
                     $A['media_title'] = $LANG_SMAP['untitled'];
                 }
-                $item = new Item;
-                $item['id'] = $A['media_id'];
-                $item['title'] = $A['media_title'];
-                $item['uri'] = $_MG_CONF['site_url'] . '/media.php?s=' . urlencode($A['media_id']);
-                $item['date'] = $A['media_time'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['media_id'])
+                     ->withTitle($A['media_title'])
+                     ->withUrl($_MG_CONF['site_url'] . '/media.php?s=' . urlencode($A['media_id']))
+                     ->withDate($A['media_time']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;

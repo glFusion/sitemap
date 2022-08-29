@@ -88,12 +88,12 @@ class article extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $entry = new Item;
-                $entry['id']        = $A['tid'];
-                $entry['title']     = $A['topic'];
-                $entry['uri']       = $_CONF['site_url'] . '/index.php?topic=' . $entry['id'];
-                $entry['image_uri'] = $A['imageurl'];
-                $retval[] = $entry->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['tid'])
+                     ->withTitle($A['topic'])
+                     ->withUrl($_CONF['site_url'] . '/index.php?topic=' . $A['tid'])
+                     ->withImageUrl($A['imageurl']);
+                $retval[] = $Item->toArray();
             }
         }
         return $retval;
@@ -141,12 +141,12 @@ class article extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['sid'];
-                $item['title'] = $A['title'];
-                $item['uri'] = COM_buildUrl($_CONF['site_url'] . '/article.php?story=' . $A['sid']);
-                $item['date'] = $A['day'];
-                $retval[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['sid'])
+                     ->withTitle($A['title'])
+                     ->withUrl(COM_buildUrl($_CONF['site_url'] . '/article.php?story=' . $A['sid']))
+                     ->withDate($A['day']);
+                $retval[] = $Item->toArray();
             }
         }
         return $retval;

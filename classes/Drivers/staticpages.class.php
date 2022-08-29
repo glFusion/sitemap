@@ -81,12 +81,12 @@ class staticpages extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['sp_id'];
-                $item['title'] = $A['sp_title'];
-                $item['uri'] = COM_buildUrl($_CONF['site_url'] . '/page.php?page=' . $A['sp_id']);
-                $item['date'] = $A['day'];
-                $retval[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['sp_id'])
+                     ->withTitle($A['sp_title'])
+                     ->withUrl(COM_buildUrl($_CONF['site_url'] . '/page.php?page=' . $A['sp_id']))
+                     ->withDate($A['day']);
+                $retval[] = $Item->toArray();
             }
         }
         return $retval;

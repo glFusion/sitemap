@@ -101,13 +101,13 @@ class links extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['cid'];
-                $item['pid'] = $A['pid'];
-                $item['title'] = $A['category'];
-                $item['uri'] = self::getEntryPoint() . '?category='.urlencode($A['cid']);
-                $item['date'] = strtotime($A['modified']);
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['cid'])
+                     ->withParentId($A['pid'])
+                     ->withTitle($A['category'])
+                     ->withUrl(self::getEntryPoint() . '?category='.urlencode($A['cid']))
+                     ->withDate(strtotime($A['modified']));
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;
@@ -151,15 +151,15 @@ class links extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['lid'];
-                $item['title'] = $A['title'];
-                $item['uri'] = COM_buildURL(
-                    $_CONF['site_url'] . '/links/portal.php?what=link&amp;item='
-                    . urlencode($A['lid'])
-                );
-                $item['date'] = $A['date_u'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['lid'])
+                     ->withTitle($A['title'])
+                     ->withUrl(COM_buildURL(
+                         $_CONF['site_url'] . '/links/portal.php?what=link&amp;item='
+                         . urlencode($A['lid'])
+                     ) )
+                     ->withDate($A['date_u']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;

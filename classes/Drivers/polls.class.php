@@ -89,12 +89,12 @@ class polls extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['pid'];
-                $item['title'] = $A['topic'];
-                $item['uri'] = $_CONF['site_url'] . '/polls/index.php?pid=' . urlencode($A['pid']);
-                $item['date'] = $A['day'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['pid'])
+                     ->withTitle($A['topic'])
+                     ->withUrl($_CONF['site_url'] . '/polls/index.php?pid=' . urlencode($A['pid']))
+                     ->withDate($A['day']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;

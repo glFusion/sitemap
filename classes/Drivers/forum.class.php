@@ -61,11 +61,11 @@ class forum extends BaseDriver
         }
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = (int)$A['forum_id'];
-                $item['title'] = $A['forum_name'];
-                $item['uri'] = self::getEntryPoint() . '?forum=' . $A['forum_id'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['forum_id'])
+                     ->withTitle($A['forum_name'])
+                     ->withUrl(self::getEntryPoint() . '?forum=' . $A['forum_id']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;
@@ -96,7 +96,7 @@ class forum extends BaseDriver
         if ($forum_id === false) {
             $qb->leftJoin('t', $_TABLES['ff_forums'], 'f', 't.forum = f.forum_id')
                ->andWhere('f.grp_id IN (:groups)')
-               ->setParameter('groups', array_values(SEC_getUserGroups(1)), Database::PARAM_INT_ARRAY);
+               ->setParameter('groups', $this->groups, Database::PARAM_INT_ARRAY);
         } else {
             $qb->andWhere('forum = :forum_id')
                ->setParameter('forum_id', $forum_id, Database::INTEGER);
@@ -110,12 +110,12 @@ class forum extends BaseDriver
 
         if ($stmt) {
             while ($A = $stmt->fetchAssociative()) {
-                $item = new Item;
-                $item['id'] = $A['id'];
-                $item['title'] = $A['subject'];
-                $item['uri'] = $_CONF['site_url'] . '/forum/viewtopic.php?showtopic='.$A['id'];
-                $item['date'] = $A['lastupdated'];
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['id'])
+                     ->withTitle($A['subject'])
+                     ->withUrl($_CONF['site_url'] . '/forum/viewtopic.php?showtopic='.$A['id'])
+                 ->withDate($A['lastupdated']);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;

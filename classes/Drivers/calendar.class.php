@@ -75,17 +75,10 @@ class calendar extends BaseDriver
                 // Replace empty title string with "uncategorized"
                 $title = $A['event_type'];
                 if (empty($title)) $title = $LANG_SMAP['uncategorized'];
-                $item = new Item;
-                $item['id'] = $A['event_type'];
-                $item['title'] = $title;
-                    /*'id'        => $A['event_type'],
-                    'pid'       => false,
-                    'title'     => $title,
-                    'uri'       => false,
-                    'date'      => false,
-                    'image_uri' => false,
-                );*/
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['event_type'])
+                     ->withTitle($title);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;
@@ -144,12 +137,12 @@ class calendar extends BaseDriver
             while ($A = $stmt->fetchAssociative()) {
                 if ($A['timestart'] == null) $A['timestart'] = '00:00:00';
                 $datetime = strtotime($A['datestart'].'T'.$A['timestart']);
-                $item = new Item;
-                $item['id'] = $A['eid'];
-                $item['title'] = $A['title'];
-                $item['uri'] = $_CONF['site_url'].'/calendar/event.php?eid='.$A['eid'];
-                $item['date'] = $datetime;
-                $entries[] = $item->toArray();
+                $Item = new Item;
+                $Item->withItemId($A['eid'])
+                     ->withTitle($A['title'])
+                     ->withUrl($_CONF['site_url'].'/calendar/event.php?eid='.$A['eid'])
+                     ->withDate($datetime);
+                $entries[] = $Item->toArray();
             }
         }
         return $entries;

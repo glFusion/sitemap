@@ -90,31 +90,34 @@ class dokuwiki extends BaseDriver
                 if (auth_aclcheck($item['id'],'',array()) < AUTH_READ) {
                     continue;
                 }
-                $entry = new Item;
-                $entry['id'] = $item['id'];
-                $entry['pid'] = $pid;
+                $title = p_get_metadata($item['id'], 'title');
+                if (empty($title)) {
+                    $title = $item['id'];
+                }
+                $Entry = new Item;
+                $Entry->withItemId($item['id'])
+                      ->withParentId($pid)
+                      ->withTitle($title);
 
-                $entry['title'] = p_get_metadata($item['id'], 'title');
-                if ( empty($entry['title']) ) $entry['title'] = $item['id'];
                 switch ($conf['userewrite']) {
                     case 1: // URL rewrite - .htaccess
-                        $entry['uri'] = $_CONF['site_url'].$_DW_CONF['public_dir'].$entry['id'];
+                        $Entry->withUrl($_CONF['site_url'].$_DW_CONF['public_dir'].$entry['id']);
                         break;
                     case 0: // URL rewrite - off
-                        $entry['uri'] = $_CONF['site_url'] . $_DW_CONF['public_dir']
-                        . 'doku.php?id=' . $entry['id'];
+                        $Entry->withUrl(
+                            $_CONF['site_url'] . $_DW_CONF['public_dir'] . 'doku.php?id=' . $entry['id']
+                        );
                         break;
                     case 2: // URL rewrite - internal
-                        $entry['uri'] = $_CONF['site_url'] . $_DW_CONF['public_dir']
-                        . 'doku.php/' . $entry['id'];
+                        $Entry->withUrl(
+                            $_CONF['site_url'] . $_DW_CONF['public_dir'] . 'doku.php/' . $entry['id']
+                        );
                         break;
                     default:
 //                        continue;
                         break;
                 }
-                $entry['date']      = false;
-                $entry['image_uri'] = false;
-                $entries[] = $entry->toArray();
+                $entries[] = $Entry->toArray();
             }
         }
         return $entries;
@@ -182,31 +185,36 @@ class dokuwiki extends BaseDriver
             if (!$date) {
                 continue;
             }
+            $title = p_get_metadata($id, 'title');
+            if (empty($title)) {
+                $title = $id;
+            }
 
-            $entry = new Item;
-            $entry['id']    = $id;
-            $entry['title'] = p_get_metadata($id, 'title');
-            if ( $entry['title'] == '' ) $entry['title'] = $id;
-            $entry['date'] = $date;
+            $Entry = new Item;
+            $Entry->withItemId($id)
+                  ->withTitle($title)
+                  ->withDate($date);
             switch ($conf['userewrite']) {
                 case 1: // URL rewrite - .htaccess
-                    $entry['uri'] = $_CONF['site_url'].$_DW_CONF['public_dir'].$entry['id'];
+                    $Entry->withUrl($_CONF['site_url'].$_DW_CONF['public_dir'].$entry['id']);
                     break;
 
                 case 0: // URL rewrite - off
-                    $entry['uri'] = $_CONF['site_url'] . $_DW_CONF['public_dir']
-                    . 'doku.php?id=' . $entry['id'];
+                    $Entry->withUrl(
+                        $_CONF['site_url'] . $_DW_CONF['public_dir'] . 'doku.php?id=' . $entry['id']
+                    );
                     break;
 
                 case 2: // URL rewrite - internal
-                    $entry['uri'] = $_CONF['site_url'] . $_DW_CONF['public_dir']
-                    . 'doku.php/' . $entry['id'];
+                    $Entry->withUrl(
+                        $_CONF['site_url'] . $_DW_CONF['public_dir'] . 'doku.php/' . $entry['id']
+                    );
                     break;
 
                 default:
                     break;
             }
-            $entries[] = $entry->toArray();
+            $entries[] = $Entry->toArray();
         }
         return $entries;
     }
