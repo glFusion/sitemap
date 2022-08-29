@@ -116,11 +116,11 @@ if (file_exists(__DIR__ . '/config.php')) {
 */
 function plugin_getmenuitems_sitemap()
 {
-    global $_CONF;
+    global $_CONF, $LANG_SMAP;
 
     if (Sitemap::canView() ) {
         return array(
-            Sitemap::str('menu_label') => $_CONF['site_url'] . '/sitemap/index.php',
+            $LANG_SMAP['menu_label'] => $_CONF['site_url'] . '/sitemap/index.php',
         );
     }
     return array();
@@ -144,12 +144,13 @@ function plugin_commentsupport_sitemap()
 *
 *   @return array   Array of (plugin name, admin url, url of plugin icon)
 */
-function plugin_cclabel_sitemap() {
-    global $_CONF;
+function plugin_cclabel_sitemap()
+{
+    global $_CONF, $LANG_SMAP;
 
     if (SEC_hasRights('sitemap.admin')) {
         return array(
-            Sitemap::str('menu_label'),
+            $LANG_SMAP['menu_label'],
             $_CONF['site_admin_url'] . '/plugins/sitemap/index.php',
             $_CONF['site_url'] . '/sitemap/images/sitemap.png',
         );
@@ -177,11 +178,11 @@ function plugin_geticon_sitemap() : string
 */
 function plugin_getadminoption_sitemap()
 {
-    global $_CONF, $_TABLES;
+    global $_CONF, $_TABLES, $LANG_SMAP;
 
     if (SEC_hasRights('sitemap.admin')) {
         return array(
-            Sitemap::str('menu_label'),
+            $LANG_SMAP['menu_label'],
             $_CONF['site_admin_url'] . '/plugins/sitemap/index.php',
             $num_items = '',
         );

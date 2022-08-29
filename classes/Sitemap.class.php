@@ -1,4 +1,15 @@
 <?php
+/**
+ * Handle creating and writing sitemap files.
+ *
+ * @author      Lee Garner <lee@leegarner.com>
+ * @copyright   Copyright (c) 2022 Lee Garner <lee@leegarner.com>
+ * @package     sitemap
+ * @version     v2.1.0
+ * @license     http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
+ */
 
 namespace Sitemap;
 use glFusion\Database\Database;
@@ -177,7 +188,10 @@ class Sitemap
 
     
     /**
-     * Escapes a string for HTML output
+     * Escapes a string for HTML output.
+     *
+     * @param   string  $str    Original string
+     * @return  string      Escaped string
      */
     public static function escape(string $str) : string
     {
@@ -187,27 +201,6 @@ class Sitemap
             $str
         );
         return htmlspecialchars($str, ENT_QUOTES, COM_getEncodingt());
-    }
-
-
-    /**
-     * Get a language string.
-     *
-     */
-    public static function str($index, $noesc = false) : string
-    {
-        global $LANG_SMAP;
-
-        if (isset($LANG_SMAP[$index])) {
-            if ($noesc) {
-                return $LANG_SMAP[$index];
-            } else {
-                return self::escape($LANG_SMAP[$index]);
-            }
-        } else {
-            Log::write('system', Log::ERROR, 'SITEMAP_str: undefined index "' . $index . '".');
-            return '(undefined)';
-        }
     }
 
 
