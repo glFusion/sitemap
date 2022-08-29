@@ -41,7 +41,7 @@ $LANG_SMAP = array (
     'plugin'            => 'sitemap Plugin',
     'access_denied'     => 'Přístup odepřen',
     'access_denied_msg' => 'Přístup na tuto stránku má pouze root.  Tvé uživatelské jméno a IP adresa byly zaznamenány.',
-    'admin'                => 'administrace sitemap Plugin',
+    'admin'                => 'administrace Sitemap Plugin',
     'admin_help'        => 'Zaškrtněte políčka pro změnu, zda se každý prvek objeví v souborech nebo online mapě stránek. Pomocí výběrů změníte frekvenci a prioritu a klikněte na šipky pro změnu pořadí, ve kterém se prvky zobrazují v mapách stránek. Změny se projeví okamžitě.
 <p>Chcete-li okamžitě obnovit XML soubory, klikněte &quot;Aktualizovat nyní&quot;.
 <br>Klikněte &quot;Vymazat mezipaměť&quot; pro vymazání všech dat a konfigurací z mezipaměti.',
