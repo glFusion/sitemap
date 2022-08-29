@@ -1,15 +1,15 @@
 <?php
 /**
- *   Forum driver for the Sitemap plugin.
- *   Derived from the Dataproxy plugin.
+ * Forum driver for the Sitemap plugin.
+ * Derived from the Dataproxy plugin.
  *
- *   @author     Mark R. Evans  <mark AT glfusion DOT org
- *   @copyright  
- *   @package    sitemap
- *   @version    2.0.2
- *   @license    http://opensource.org/licenses/gpl-2.0.php
- *               GNU Public License v2 or later
- *   @filesource
+ * @author      Mark R. Evans  <mark AT glfusion DOT org
+ * @copyright   Copyright (c) 2009-2015 Mark R. Evans <mark@glfusion.org>
+ * @package     sitemap
+ * @version     v2.0.2
+ * @license     http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
  */
 namespace Sitemap\Drivers;
 use glFusion\Database\Database;
@@ -94,9 +94,9 @@ class forum extends BaseDriver
            ->where('t.pid = 0')
            ->orderBy('t.lastupdated', 'DESC');
         if ($forum_id === false) {
-            $qb->leftJoin('t', $_TABLES['ff_forums'], 'f', 't.forum = f.forum')
-               ->andWhere('f.grp_id IN :groups')
-               ->setParameter('groups', SEC_getUserGroups(1), Database::PARAM_INT_ARRAY);
+            $qb->leftJoin('t', $_TABLES['ff_forums'], 'f', 't.forum = f.forum_id')
+               ->andWhere('f.grp_id IN (:groups)')
+               ->setParameter('groups', array_values(SEC_getUserGroups(1)), Database::PARAM_INT_ARRAY);
         } else {
             $qb->andWhere('forum = :forum_id')
                ->setParameter('forum_id', $forum_id, Database::INTEGER);
