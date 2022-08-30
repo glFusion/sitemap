@@ -152,5 +152,16 @@ class article extends BaseDriver
         return $retval;
     }
 
+    /**
+     * Get the plugin or item's entry point.
+     * There's no URL for an article list, so redirct to the site index.
+     *
+     * @return  mixed   Base URL to content items, or False if n/a
+     */
+    public function getEntryPoint() : ?string
+    {
+        return NULL;
+    }
+
 }
 
