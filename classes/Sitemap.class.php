@@ -125,7 +125,6 @@ class Sitemap
         $T->set_block('smap', 'smap_item', 'item');
 
         foreach ($drivers as $driver) {
-            $key = $driver->getName() . '_xml';
             if ($driver->xml_enabled) {
                 // Only add XML-enabled items
                 $driver->setXML();   // Mark as an XML sitemap
@@ -294,13 +293,17 @@ class Sitemap
     {
         global $_TABLES;
 
-        $db = Database::getInstance();
         $change = $cnt == 0 ? '0' : 'value + 1';
-        $db->conn->executeStatement(
-            "UPDATE {$_TABLES['vars']}
-            SET value = $change
-            WHERE name = 'sitemap_changes'"
-        );
+        try {
+            Database::getInstance()->conn->update(
+                $_TABLES['vars'],
+                array('value' => $change),
+                array('name' => 'sitemap_changes'),
+                array(Database::STRING, Database::STRING)   // to match schema
+            );
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+        }
     }
 
 }
