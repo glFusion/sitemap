@@ -197,9 +197,8 @@ function SITEMAP_buildCategory(object $Driver, array $cat) : array
 
 // Retrieves vars
 $selected = 'all';
-if (isset($_GET['type'])) {
-    $selected = COM_applyFilter($_GET['type']);
-}
+$Request = Sitemap\Models\Request::getInstance();
+$selected = COM_applyFilter($Request->getString('type'));
 
 $T = new Template($_CONF['path'] . 'plugins/sitemap/templates');
 $T->set_file(array(

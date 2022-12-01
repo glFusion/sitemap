@@ -38,6 +38,7 @@ use Sitemap\FieldList;
 use Sitemap\Sitemap;
 use Sitemap\Config;
 use Sitemap\Plugin;
+use Sitemap\Models\Request;
 
 if (!in_array('sitemap', $_PLUGINS)) {
     COM_404();
@@ -208,26 +209,15 @@ function SMAP_adminList()
 
 USES_lib_admin();
 
-$action = '';
-
 $expected = array(
     'move', 'updatenow', 'clearcache',
 );
-foreach($expected as $provided) {
-    if (isset($_POST[$provided])) {
-        $action = $provided;
-        $actionval = $_POST[$provided];
-        break;
-    } elseif (isset($_GET[$provided])) {
-        $action = $provided;
-        $actionval = $_GET[$provided];
-        break;
-    }
-}
+$Request = Request::getInstance();
+list($action, $actionval) = $Request->getAction($expected);
 
 switch ($action) {
 case 'move':
-    Config::Move($_GET['id'], $actionval);
+    Config::Move($Request->getString('id'), $actionval);
     break;
 case 'updatenow':
     $st = ini_get('short_open_tag');
