@@ -19,7 +19,8 @@ namespace Sitemap;
  */
 class Cache
 {
-    const MIN_GVERSION = '2.0.0';
+    /** Common tags always applied to cached items.
+     * @var array */
     private static $_TAGS = array('sitemap', 'plugin');
 
 
@@ -119,4 +120,3 @@ class Cache
     }
 
 }
-
