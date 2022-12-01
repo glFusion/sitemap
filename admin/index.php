@@ -217,7 +217,7 @@ list($action, $actionval) = $Request->getAction($expected);
 
 switch ($action) {
 case 'move':
-    Config::Move($Request->getString('id'), $actionval);
+    Plugin::Move($Request->getString('id'), $actionval);
     break;
 case 'updatenow':
     $st = ini_get('short_open_tag');
