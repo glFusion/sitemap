@@ -64,7 +64,7 @@ spl_autoload_register(function ($class)
         // Loading a driver class. Could be bundled with this plugin
         // or provided by another, so get the first path found.
         $class = str_replace('Sitemap\\Drivers\\', '', $class);
-        $path = Sitemap\Plugin::getDriverPath($class, false);   // no legacy
+        $path = \Sitemap\Plugin::getDriverPath($class, false);   // no legacy
     } elseif (strpos($class, 'Sitemap\\Models\\') === 0) {
         // Loading an internal model class.
         $class = str_replace('Sitemap\\Models\\', '', $class);
@@ -95,6 +95,7 @@ use glFusion\Database\Database;
 use glFusion\Log\Log;
 use Sitemap\Config;
 use Sitemap\Sitemap;
+use Sitemap\Plugin as smapPlugin;
 Config::getInstance();
 require_once __DIR__ . '/sitemap.php';
 
@@ -248,11 +249,11 @@ function plugin_runScheduledTask_sitemap()
 
     switch (Config::get('schedule')) {
     case 0:     // run with every schedule task call
-        Sitemap::createGoogleSitemap();
+        Sitemap::createGoogle();
         break;
     case 1:     // run only if there are changes
         if ($_VARS['sitemap_changes'] > 0) {
-            Sitemap::createGoogleSitemap();
+            Sitemap::createGoogle();
         }
         break;
     default:
@@ -270,14 +271,14 @@ function plugin_runScheduledTask_sitemap()
 */
 function plugin_itemsaved_sitemap($id, $type, $old_id = '')
 {
-    $configs = Sitemap\Plugin::getAll();
+    $configs = smapPlugin::getAll();
     if (
         Config::get('schedule') == 1 &&
         isset($configs[$type]) && $configs[$type]['xml_enabled']
     ) {
         Sitemap::updateCounter();
     }
-    Sitemap\Cache::clear($type);
+    \Sitemap\Cache::clear($type);
 }
 
 
@@ -292,10 +293,9 @@ function plugin_itemsaved_sitemap($id, $type, $old_id = '')
 */
 function plugin_itemdeleted_sitemap($id, $type, $children)
 {
-    Sitemap\Cache::clear($type);
+    \Sitemap\Cache::clear($type);
     if (Config::get('schedule') == 1) {
         Sitemap::updateCounter();    // To force regeneration
     }
-    Sitemap\Cache::clear($type);
+    \Sitemap\Cache::clear($type);
 }
-
