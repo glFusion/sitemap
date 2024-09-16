@@ -1,30 +1,42 @@
 <?php
 /**
-*   Upgrade routines for the Sitemap plugin
-*
-*   @author     Lee Garner <lee@leegarner.com>
-*   @copyright  Copyright (c) 2017-2018 Lee Garner <lee@leegarner.com>
-*   @package    sitemap
-*   @version    2.0.1
-*   @license    http://opensource.org/licenses/gpl-2.0.php
-*               GNU Public License v2 or later
-*   @filesource
-*/
+ * Upgrade routines for the Sitemap plugin.
+ *
+ * @author      Lee Garner <lee@leegarner.com>
+ * @copyright   Copyright (c) 2017-2022 Lee Garner <lee@leegarner.com>
+ * @package     sitemap
+ * @version     v2.1.0
+ * @license     http://opensource.org/licenses/gpl-2.0.php
+ *              GNU Public License v2 or later
+ * @filesource
+ */
+use glFusion\Database\Database;
+use glFusion\Log\Log;
+use Sitemap\Config;
 
 if (!defined('GVERSION')) {
     die('This file can not be used on its own.');
 }
 
-function sitemap_upgrade()
+function sitemap_upgrade(bool $dvlp=false) : bool
 {
-    global $_TABLES, $_CONF, $_PLUGINS, $_SMAP_CONF, $_DB_dbms, $_DB_table_prefix;
+    global $_TABLES, $_CONF, $_PLUGIN_INFO, $_DB_dbms;
 
-    $currentVersion = DB_getItem($_TABLES['plugins'],'pi_version',"pi_name='sitemap'");
+    if (isset($_PLUGIN_INFO[Config::PI_NAME])) {
+        $current_ver = $_PLUGIN_INFO[Config::PI_NAME]['pi_version'];
+    } else {
+        return false;
+    }
+    $installed_ver = plugin_chkVersion_sitemap();
+    $db = Database::getInstance();
+    $currentVersion = $db->getItem($_TABLES['plugins'], 'pi_version', array('pi_name' => 'sitemap'));
 
     static $use_innodb = null;
     if ($use_innodb === null) {
-        if (($_DB_dbms == 'mysql') &&
-            (DB_getItem($_TABLES['vars'], 'value', "name = 'database_engine'") == 'InnoDB')) {
+        if (
+            ($_DB_dbms == 'mysql') &&
+            ($db->getItem($_TABLES['vars'], 'value', array('name' => 'database_engine')) == 'InnoDB')
+        ) {
             $use_innodb = true;
         } else {
             $use_innodb = false;
@@ -73,24 +85,30 @@ function sitemap_upgrade()
             plugin_initconfig_sitemap();
 
             // reload config
-            $configT = config::get_instance();
-            $_SMAP_CONF = $configT->get_config('sitemap');
+            Config::getInstance();
             include __DIR__ . '/sitemap.php';
 
             // do database updates
             // $_SQL is set in mysql_install.php
-
             $sql = $_SQL['smap_maps'];
             if ($use_innodb) {
                 $sql = str_replace('MyISAM', 'InnoDB', $sql);
             } else {
                 $sql = $sql;
             }
-            DB_query($sql,1);
+            try {
+                $db->conn->executeStatement($sql);
+            } catch (\Throwable $e) {
+                Log::write('system', Log::ERROR, __FUNCTION__ . ': ' . $e->getMessage());
+            }
 
             // load default data
             $data = $_DATA['default_maps'];
-            DB_query($data,1);
+            try {
+                $db->conn->executeStatement($data);
+            } catch (\Throwable $e) {
+                Log::write('system', Log::ERROR, __FUNCTION__ . ': ' . $e->getMessage());
+            }
 
             // now get the current sitemap configs and put them in the new "maps" table.
             // seed with "sitemap" to block including the sitemap plugin
@@ -117,7 +135,8 @@ function sitemap_upgrade()
                 if (in_array($pi_name, $pi_confs)) continue;
                 // crude method to see if $key refers to a plugin
                 if (!in_array($pi_name, $internal) &&
-                    !in_array($pi_name, $_PLUGINS)) {
+                    !array_key_exists($pi_name, $_PLUGIN_INFO)
+                ) {
                     continue;
                 }
                 $pi_confs[] = $pi_name;
@@ -134,14 +153,26 @@ function sitemap_upgrade()
             \Sitemap\Config::updateConfigs();
 
             // remove old config table
-            DB_query("DROP table {$_TABLES['smap_config']}",1);
+            try {
+                $db->conn->executeStatement("DROP table {$_TABLES['smap_config']}");
+            } catch (\Throwable $e) {
+                Log::write('system', Log::ERROR, __FUNCTION__ . ': ' . $e->getMessage());
+            }
 
             // fall through...
         case '2.0.0' :
-            $configT = config::get_instance();
-            $configT->add('schedule', $_SMAP_DEFAULT['schedule'], 'select', 0, 0, 5, 40, true, $_SMAP_CONF['pi_name']);
             // Add the change counter
-            DB_query("INSERT INTO {$_TABLES['vars']} VALUES ('sitemap_changes', '0')",1);
+            try {
+                $db->conn->insert(
+                    $_TABLES['vars'],
+                    array('sitemap_changes' => '0'),
+                    array(Database::STRING)
+                );
+            } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $k) {
+                // Do nothing
+            } catch (\Throwable $e) {
+                Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            }
 
         case '2.0.1' :
             // no changes
@@ -156,25 +187,27 @@ function sitemap_upgrade()
             // no changes
 
         default:
-            DB_query("UPDATE {$_TABLES['plugins']} SET pi_version='".$_SMAP_CONF['pi_version']."',pi_gl_version='".$_SMAP_CONF['gl_version']."' WHERE pi_name='sitemap' LIMIT 1");
             break;
     }
 
-    CTL_clearCache();
-    Sitemap\Cache::clear();
     _SITEMAP_remOldFiles();
-
-    if ( DB_getItem($_TABLES['plugins'],'pi_version',"pi_name='sitemap'") == $_SMAP_CONF['pi_version']) {
-        return true;
-    } else {
-        return false;
+    Sitemap\Cache::clear();
+    CTL_clearCache();
+    SMAP_update_config();
+    if ($current_ver != $installed_ver) {
+        if (!SMAP_do_set_version($installed_ver)) {
+            return false;
+        }
+        $current_ver = $installed_ver;
     }
+    return true;
 }
 
 
 /**
-* Loads vars from DB into $_SMAP_CONF[]
-*/
+ * Loads vars from DB into $_SMAP_CONF[]
+ * @deprecate
+ */
 function _SITEMAP_loadConfig()
 {
     global $_TABLES;
@@ -215,7 +248,7 @@ function _SITEMAP_loadConfig()
  */
 function _SITEMAP_remOldFiles()
 {
-    global $_CONF, $_SMAP_CONF;
+    global $_CONF;
 
     $paths = array(
         // private/plugins/sitemap
@@ -234,10 +267,10 @@ function _SITEMAP_remOldFiles()
             'sitemap/staticpages.class.php',
         ),
         // public_html/sitemap
-        $_CONF['path_html'] . $_SMAP_CONF['pi_name'] => array(
+        $_CONF['path_html'] . Config::PI_NAME => array(
         ),
         // admin/plugins/sitemap
-        $_CONF['path_html'] . 'admin/plugins/' . $_SMAP_CONF['pi_name'] => array(
+        $_CONF['path_html'] . 'admin/plugins/' . Config::PI_NAME => array(
         ),
     );
 
@@ -250,4 +283,50 @@ function _SITEMAP_remOldFiles()
     if (is_dir(__DIR__ . '/sitemap')) @rmdir(__DIR__ . '/sitemap');
 }
 
-?>
+
+/**
+ * Update the plugin configuration
+ */
+function SMAP_update_config()
+{
+    USES_lib_install();
+
+    require_once __DIR__ . '/install_defaults.php';
+    _update_config('sitemap', $smapConfigData);
+}
+
+
+/**
+ * Update the plugin version number in the database.
+ * Called at each version upgrade to keep up to date with
+ * successful upgrades.
+ *
+ * @param   string  $ver    New version to set
+ * @return  boolean         True on success, False on failure
+ */
+function SMAP_do_set_version($ver)
+{
+    global $_TABLES, $_PLUGIN_INFO;
+
+    $db = Database::getInstance();
+    try {
+        $db->conn->update(
+            $_TABLES['plugins'],
+            array(
+                'pi_version' => $ver,
+                'pi_gl_version' => Config::get('gl_version'),
+                'pi_homepage' => Config::get('pi_url'),
+            ),
+            array('pi_name' => Config::PI_NAME),
+            array(Database::STRING, Database::STRING, Database::STRING, Database::STRING)
+        );
+        Log::write('system', Log::DEBUG, Config::get('pi_display_name') . " version set to $ver");
+        Config::set('pi_version', $ver);
+        $_PLUGIN_INFO[Config::PI_NAME]['pi_version'] = $ver;
+        return true;
+     } catch (\Throwable $e) {
+         Log::write('system', Log::ERROR, __FUNCTION__ . ': ' . $e->getMessage());
+         return false;
+    }
+}
+

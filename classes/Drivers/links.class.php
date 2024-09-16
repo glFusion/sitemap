@@ -32,6 +32,9 @@
 // |                                                                          |
 // +--------------------------------------------------------------------------+
 namespace Sitemap\Drivers;
+use glFusion\Database\Database;
+use glFusion\Log\Log;
+use Sitemap\Models\Item;
 
 // this file can't be used on its own
 if (!defined ('GVERSION')) {
@@ -39,15 +42,14 @@ if (!defined ('GVERSION')) {
 }
 
 /**
-* Links plugin supports URL rwrite in individual links but doesn't do so in
-* categories, e.g.:
-*
-* link     (off) http://www.example.com/links/portal.php?what=link&amp;item=glfusion.org
-*          (on)  http://www.example.com/links/portal.php/link/glfusion.org
-* category (off) http://www.example.com/links/index.php?category=glfusion-site
-*          (on)  http://www.example.com/links/index.php?category=glfusion-site
-*/
-
+ * Links plugin supports URL rwrite in individual links but doesn't do so in
+ * categories, e.g.:
+ *
+ * link     (off) http://www.example.com/links/portal.php?what=link&amp;item=glfusion.org
+ *          (on)  http://www.example.com/links/portal.php/link/glfusion.org
+ * category (off) http://www.example.com/links/index.php?category=glfusion-site
+ *          (on)  http://www.example.com/links/index.php?category=glfusion-site
+ */
 class links extends BaseDriver
 {
     protected $name = 'links';
@@ -60,47 +62,53 @@ class links extends BaseDriver
 
 
     /**
-    * @param $pid int/string/boolean id of the parent category.  False means
-    *        the top category (with no parent)
-    * @return array(
-    *   'id'        => $id (string),
-    *   'pid'       => $pid (string: id of its parent)
-    *   'title'     => $title (string),
-    *   'uri'       => $uri (string),
-    *   'date'      => $date (int: Unix timestamp),
-    *   'image_uri' => $image_uri (string)
-    *  )
-    */
+     * @param $pid int/string/boolean id of the parent category.  False means
+     *        the top category (with no parent)
+     * @return array(
+     *   'id'        => $id (string),
+     *   'pid'       => $pid (string: id of its parent)
+     *   'title'     => $title (string),
+     *   'uri'       => $uri (string),
+     *   'date'      => $date (int: Unix timestamp),
+     *   'image_uri' => $image_uri (string)
+     *  )
+     */
     public function getChildCategories($pid = false)
     {
         global $_CONF, $_TABLES;
 
         $entries = array();
-        $sql = "SELECT * FROM {$_TABLES['linkcategories']}";
+        $db = Database::getInstance();
+        $qb = $db->conn->createQueryBuilder();
+        $qb->select('*')
+            ->from($_TABLES['linkcategories']);
+        //$sql = "SELECT * FROM {$_TABLES['linkcategories']}";
         if ($pid === false) {
             $pid = 'root';
         }
-        $sql .= " WHERE (pid = '" . DB_escapeString($pid) . "') ";
+        $qb->where('pid = :pid')
+           ->setParameter('pid', $pid, Database::STRING);
 
         if ($this->uid > 0) {
-            $sql .= COM_getPermSQL('AND', $this->uid);
+            $qb->andWhere($db->getPermSQL('', $this->uid));
         }
 
-        $result = DB_query($sql, 1);
-        if (DB_error()) {
-            COM_errorLog("sitemap_links::getChildCategories() error: $sql");
-            return $entries;
+        try {
+            $stmt = $qb->execute();
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $stmt = false;
         }
-
-        while (($A = DB_fetchArray($result, false)) !== FALSE) {
-            $entries[] = array(
-                'id'        => $A['cid'],
-                'pid'       => $A['pid'],
-                'title'     => $A['category'],
-                'uri'       => self::getEntryPoint() . '?category='.urlencode($A['cid']),
-                'date'      => strtotime($A['modified']),
-                'image_uri' => false,
-            );
+        if ($stmt) {
+            while ($A = $stmt->fetchAssociative()) {
+                $Item = new Item;
+                $Item->withItemId($A['cid'])
+                     ->withParentId($A['pid'])
+                     ->withTitle($A['category'])
+                     ->withUrl(self::getEntryPoint() . '?category='.urlencode($A['cid']))
+                     ->withDate(strtotime($A['modified']));
+                $entries[] = $Item->toArray();
+            }
         }
         return $entries;
     }
@@ -120,37 +128,42 @@ class links extends BaseDriver
         global $_CONF, $_TABLES;
 
         $entries = array();
+        $db = Database::getInstance();
+        $qb = $db->conn->createQueryBuilder();
+        $qb->select('lid', 'title', 'UNIX_TIMESTAMP(date) AS date_u')
+           ->from($_TABLES['links'])
+           ->where('1=1')
+           ->orderBy('date_u', 'DESC');
 
-        $sql  = "SELECT lid, title, UNIX_TIMESTAMP(date) AS date_u
-                FROM {$_TABLES['links']} WHERE 1=1 ";
         if (!empty($category)) {
-            $sql .= "AND (cid ='".DB_escapeString($category)."') ";
+            $qb->andWhere('cid = :category')
+               ->setParameter('category', $category, Database::STRING);
         }
-
         if ($this->uid > 0) {
-            $sql .= COM_getPermSQL('AND', $this->uid);
-        }
-        $sql .= "ORDER BY date_u DESC";
-        $result  = DB_query($sql);
-        if (DB_error()) {
-            return $entries;
+            $qb->andWhere($db->getPermSQL('', $this->uid));
         }
 
-        while (($A = DB_fetchArray($result, false)) !== FALSE) {
-            $entries[] = array(
-                'id'        => $A['lid'],
-                'title'     => $A['title'],
-                'uri'       => COM_buildURL(
-                    $_CONF['site_url'] . '/links/portal.php?what=link&amp;item='
-                    . urlencode($A['lid'])
-                ),
-                'date'      => $A['date_u'],
-                'image_uri' => false,
-            );
+        try {
+            $stmt = $qb->execute();
+        } catch (\Throwable $e) {
+            Log::write('system', Log::ERROR, __METHOD__ . ': ' . $e->getMessage());
+            $stmt = false;
+        }
+        if ($stmt) {
+            while ($A = $stmt->fetchAssociative()) {
+                $Item = new Item;
+                $Item->withItemId($A['lid'])
+                     ->withTitle($A['title'])
+                     ->withUrl(COM_buildURL(
+                         $_CONF['site_url'] . '/links/portal.php?what=link&amp;item='
+                         . urlencode($A['lid'])
+                     ) )
+                     ->withDate($A['date_u']);
+                $entries[] = $Item->toArray();
+            }
         }
         return $entries;
     }
 
 }
 
-?>
